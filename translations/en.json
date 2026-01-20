@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Messana",
+        "description": "Connect to a Messana mControl system (local or remote).",
+        "data": {
+          "base_url": "Base URL",
+          "api_key": "API key"
+        }
+      }
+    },
+    "error": {
+      "auth": "Authentication failed (check API key).",
+      "cannot_connect": "Could not connect to the Messana API.",
+      "unknown": "Unexpected error."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Messana Options",
+        "description": "Adjust polling and (optionally) override the zone count.",
+        "data": {
+          "scan_interval": "Polling interval (seconds)",
+          "zone_count_override": "Zone count override (0 = use API)"
+        }
+      }
+    }
+  }
+}

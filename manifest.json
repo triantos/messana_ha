@@ -1,0 +1,12 @@
+{
+  "domain": "messana",
+  "name": "Messana",
+  "version": "0.1.0",
+  "documentation": "https://api.swaggerhub.com/apis/radiantcooling/messana/0.9.0/swagger.json",
+  "requirements": [],
+  "codeowners": [],
+  "config_flow": true,
+  "iot_class": "local_polling",
+  "logo": "branding/logo.png",
+  "icon": "mdi:radiator"
+}
