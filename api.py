@@ -169,7 +169,6 @@ class MessanaClient:
         # PUT /api/zone/status uses SetStatus -> {"id": <int>, "value": 0|1}
         await self._request("PUT", "/api/zone/status", json={"id": zone_id, "value": 1 if on else 0})
 
-    async def get_zone_output(self, zone_id: int) -> int:
-        # GetStatusResponse -> {"status": <int>}
-        data = await self._request("GET", f"/api/zone/output/{zone_id}")
+    async def get_zone_thermal_status(self, zone_id: int) -> int:
+        data = await self._request("GET", f"/api/zone/thermalStatus/{zone_id}")
         return self._int_or_default(data.get("status"), 0)

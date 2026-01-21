@@ -52,6 +52,7 @@ class MessanaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 dp = await self.client.get_zone_dewpoint(zid)
                 sp = await self.client.get_zone_setpoint(zid)
                 on = await self.client.get_zone_status(zid)
+                thermal_status = await self.client.get_zone_thermal_status(zid)
 
                 zones[zid] = {
                     "id": zid,
@@ -61,6 +62,7 @@ class MessanaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     "dewpoint": dp,
                     "setpoint": sp,
                     "status": on,
+                    "thermal_status": thermal_status,
                 }
 
             _LOGGER.debug(
