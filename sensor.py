@@ -6,12 +6,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.sensor import SensorEntity
 
 from .const import DOMAIN
 from .coordinator import MessanaCoordinator
 from .diagnostic import MessanaRawSampleSensor
+from .entity import MessanaEntity
 
 
 def _ha_temp_unit(messana_unit: str) -> UnitOfTemperature:
@@ -49,13 +49,13 @@ async def async_setup_entry(
         for sdef in ZONE_SENSORS:
             entities.append(MessanaZoneSensor(coordinator, zid, sdef))
     
-    entities.append(MessanaRawSampleSensor(coordinator))
+    # entities.append(MessanaRawSampleSensor(coordinator, entry.entry_id))
 
 
     async_add_entities(entities)
 
 
-class MessanaZoneSensor(CoordinatorEntity[MessanaCoordinator], SensorEntity):
+class MessanaZoneSensor(MessanaEntity, SensorEntity):
     _attr_has_entity_name = True
 
     def __init__(self, coordinator: MessanaCoordinator, zone_id: int, sdef: ZoneSensorDef) -> None:
@@ -67,7 +67,8 @@ class MessanaZoneSensor(CoordinatorEntity[MessanaCoordinator], SensorEntity):
 
     @property
     def name(self) -> str:
-        z = self.coordinator.data["zones"].get(self.zone_id, {})
+        zones = (self.coordinator.data or {}).get("zones", {})
+        z = zones.get(self.zone_id, {})
         zone_name = z.get("name", f"Zone {self.zone_id}")
         return f"{zone_name} {self.sdef.suffix}"
 
@@ -80,5 +81,6 @@ class MessanaZoneSensor(CoordinatorEntity[MessanaCoordinator], SensorEntity):
 
     @property
     def native_value(self):
-        z = self.coordinator.data["zones"].get(self.zone_id, {})
+        zones = (self.coordinator.data or {}).get("zones", {})
+        z = zones.get(self.zone_id, {})
         return z.get(self.sdef.key)

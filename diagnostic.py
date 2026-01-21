@@ -14,9 +14,9 @@ class MessanaRawSampleSensor(CoordinatorEntity[MessanaCoordinator], SensorEntity
     _attr_name = "Debug Snapshot"
     _attr_icon = "mdi:bug-outline"
 
-    def __init__(self, coordinator: MessanaCoordinator) -> None:
+    def __init__(self, coordinator: MessanaCoordinator, entry_id: str) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id = "messana_debug_snapshot"
+        self._attr_unique_id = f"messana_{entry_id}_debug_snapshot"
 
     @property
     def native_value(self) -> str:

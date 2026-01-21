@@ -10,6 +10,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import MessanaCoordinator
+from .entity import MessanaEntity
 
 
 @dataclass(frozen=True)
@@ -17,7 +18,7 @@ class ZoneActiveRef:
     zone_id: int
 
 
-class MessanaZoneActiveBinarySensor(CoordinatorEntity[MessanaCoordinator], BinarySensorEntity):
+class MessanaZoneActiveBinarySensor(MessanaEntity, BinarySensorEntity):
     _attr_has_entity_name = True
     _attr_device_class = "running"
 

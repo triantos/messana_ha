@@ -9,6 +9,7 @@ from homeassistant.components.switch import SwitchEntity
 from .const import DOMAIN
 from .coordinator import MessanaCoordinator
 from .api import MessanaClient
+from .entity import MessanaEntity
 
 
 async def async_setup_entry(
@@ -22,7 +23,7 @@ async def async_setup_entry(
     async_add_entities([MessanaSystemPowerSwitch(coordinator, client)])
 
 
-class MessanaSystemPowerSwitch(CoordinatorEntity[MessanaCoordinator], SwitchEntity):
+class MessanaSystemPowerSwitch(MessanaEntity, SwitchEntity):
     _attr_has_entity_name = True
     _attr_name = "System Power"
 

@@ -14,6 +14,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 from .coordinator import MessanaCoordinator
 from .api import MessanaClient
+from .entity import MessanaEntity
 
 
 def _ha_temp_unit(messana_unit: str) -> UnitOfTemperature:
@@ -60,7 +61,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class MessanaZoneClimate(CoordinatorEntity[MessanaCoordinator], ClimateEntity):
+class MessanaZoneClimate(MessanaEntity, ClimateEntity):
     _attr_has_entity_name = True
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
 
@@ -72,7 +73,8 @@ class MessanaZoneClimate(CoordinatorEntity[MessanaCoordinator], ClimateEntity):
 
     @property
     def name(self) -> str:
-        z = self.coordinator.data["zones"].get(self.zone_id, {})
+        zones = (self.coordinator.data or {}).get("zones", {})
+        z = zones.get(self.zone_id, {})
         return z.get("name", f"Zone {self.zone_id}")
 
     @property

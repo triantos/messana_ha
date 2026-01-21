@@ -11,6 +11,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 from .coordinator import MessanaCoordinator
 from .api import MessanaClient
+from .entity import MessanaEntity
+
 
 # /api/hc/mode: 0 Heating, 1 Cooling, 2 Auto :contentReference[oaicite:40]{index=40}
 OPTIONS = ["Heating", "Cooling", "Auto"]
@@ -39,7 +41,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class MessanaHCModeSelect(CoordinatorEntity[MessanaCoordinator], SelectEntity):
+class MessanaHCModeSelect(MessanaEntity, SelectEntity):
     _attr_has_entity_name = True
     _attr_options = OPTIONS
 
