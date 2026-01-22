@@ -107,6 +107,23 @@ class MessanaZoneClimate(MessanaEntity, ClimateEntity):
     def hvac_modes(self) -> list[HVACMode]:
         return [HVACMode.OFF, HVACMode.HEAT, HVACMode.COOL, HVACMode.HEAT_COOL]
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose coordinator zone fields as climate entity attributes for UI/templates."""
+        zones = (self.coordinator.data or {}).get("zones", {})
+        z = zones.get(self.zone_id, {})
+
+        return {
+            "zone_id": self.zone_id,
+            # Master on/off for the zone
+            "zone_status": z.get("status"),
+            # 0 none, 1 heat, 2 cool, 3 heat+cool
+            "thermal_status": z.get("thermal_status"),
+            # Convenience (so you don't *have* to reference separate sensors in templates)
+            "humidity": z.get("humidity"),
+            "dewpoint": z.get("dewpoint"),
+        }
+
     async def async_set_temperature(self, **kwargs: Any) -> None:
         temp = kwargs.get("temperature")
         if temp is None:
