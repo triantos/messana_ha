@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.components.climate import ClimateEntity
-from homeassistant.components.climate.const import HVACMode
+from homeassistant.components.climate.const import HVACMode, ClimateEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
@@ -64,6 +64,7 @@ async def async_setup_entry(
 class MessanaZoneClimate(MessanaEntity, ClimateEntity):
     _attr_has_entity_name = True
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
 
     def __init__(self, coordinator: MessanaCoordinator, client: MessanaClient, zone: ZoneRef) -> None:
         super().__init__(coordinator)
