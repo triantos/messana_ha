@@ -53,6 +53,7 @@ class MessanaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             {
                 vol.Required(CONF_BASE_URL, default="http://192.168.1.50"): str,
                 vol.Required(CONF_API_KEY): str,
+                vol.Optional(CONF_DETACH_ON_SETPOINT, default=options.get(CONF_DETACH_ON_SETPOINT, True)): bool,
             }
         )
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)

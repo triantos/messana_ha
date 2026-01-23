@@ -172,3 +172,24 @@ class MessanaClient:
     async def get_zone_thermal_status(self, zone_id: int) -> int:
         data = await self._request("GET", f"/api/zone/thermalStatus/{zone_id}")
         return self._int_or_default(data.get("status"), 0)
+
+    async def get_zone_schedule_on(self, zone_id: int) -> int:
+        data = await self._request("GET", f"/api/zone/scheduleOn/{zone_id}")
+        return self._int_or_default(data.get("status"), 0)
+
+    async def set_zone_schedule_on(self, zone_id: int, enabled: bool) -> None:
+        """Enable/disable schedule control for a zone.
+
+        PUT /api/zone/scheduleOn
+        Body: {"id": <zone_id>, "value": 0|1}
+        """
+        await self._request(
+            "PUT",
+            "/api/zone/scheduleOn",
+            json={"id": int(zone_id), "value": 1 if enabled else 0},
+        )
+
+    async def get_zone_schedule_status(self, zone_id: int) -> int:
+        data = await self._request("GET", f"/api/zone/scheduleStatus/{zone_id}")
+        return self._int_or_default(data.get("status"), 0)
+

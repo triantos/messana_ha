@@ -5,6 +5,7 @@ from typing import Any
 
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import HVACMode, ClimateEntityFeature
+from homeassistant.components.persistent_notification import async_create as async_create_persistent_notification
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
@@ -113,22 +114,60 @@ class MessanaZoneClimate(MessanaEntity, ClimateEntity):
         zones = (self.coordinator.data or {}).get("zones", {})
         z = zones.get(self.zone_id, {})
 
+        schedule_on = int(z.get("schedule_on") or 0)
+        schedule_status = int(z.get("schedule_status") or 0)
+
+        if schedule_on and schedule_status:
+            control_source = "program"
+        elif schedule_on:
+            control_source = "program_enabled"
+        else:
+            control_source = "manual"
+
         return {
             "zone_id": self.zone_id,
             # Master on/off for the zone
             "zone_status": z.get("status"),
             # 0 none, 1 heat, 2 cool, 3 heat+cool
             "thermal_status": z.get("thermal_status"),
+
+            # Schedule / program control
+            "schedule_on": schedule_on,           # 0/1: schedule assigned/enabled
+            "schedule_status": schedule_status,   # 0/1: schedule currently applied
+            "control_source": control_source,     # program | program_enabled | manual
+
             # Convenience (so you don't *have* to reference separate sensors in templates)
             "humidity": z.get("humidity"),
             "dewpoint": z.get("dewpoint"),
         }
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
-        temp = kwargs.get("temperature")
-        if temp is None:
+        """Set new target temperature.
+
+        If zone is schedule-controlled and option enabled, detach schedule first.
+        """
+        temperature = kwargs.get("temperature")
+        if temperature is None:
             return
-        await self.client.set_zone_setpoint(self.zone_id, float(temp))  # :contentReference[oaicite:35]{index=35}
+
+        z = (self.coordinator.data or {}).get("zones", {}).get(self.zone_id, {})
+        schedule_on = int(z.get("schedule_on") or 0)
+
+        detach_on_setpoint = bool(
+            self.coordinator.hass.data[DOMAIN][self.coordinator.entry_id].get("detach_on_setpoint", True)
+        )
+
+        if detach_on_setpoint and schedule_on:
+            # Detach (disable schedule control) before setting manual setpoint
+            await self.coordinator.client.set_zone_schedule_on(self.zone_id, False)
+
+            async_create_persistent_notification(
+                self.coordinator.hass,
+                title="Messana: Schedule detached",
+                message=f"Detached '{self.name}' from its schedule to set a manual temperature.",
+            )
+
+        await self.coordinator.client.set_zone_setpoint(self.zone_id, float(temperature))
         await self.coordinator.async_request_refresh()
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:

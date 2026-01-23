@@ -12,4 +12,8 @@ CONF_ZONE_COUNT_OVERRIDE = "zone_count_override"
 DEFAULT_SCAN_INTERVAL_SECONDS = 30
 DEFAULT_ZONE_COUNT_OVERRIDE = 0  # 0 means "no override; use API zoneCount"
 
-PLATFORMS: list[str] = ["climate", "sensor", "binary_sensor", "switch", "select"]
+PLATFORMS: list[str] = ["climate", "sensor", "binary_sensor", "switch", "select", "button"]
+
+# How to disconnect a zone from a schedule
+CONF_DETACH_ON_SETPOINT = "detach_on_setpoint"
+DEFAULT_DETACH_ON_SETPOINT = True
