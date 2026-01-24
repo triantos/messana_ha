@@ -1,0 +1,1088 @@
+title: Messana HVAC
+views:
+  - title: System
+    path: system
+    icon: mdi:home-thermometer
+    cards:
+      - type: custom:mushroom-chips-card
+        alignment: justify
+        chips:
+          - type: entity
+            entity: switch.system_power
+            name: Power
+            icon: mdi:power
+          - type: entity
+            entity: select.h_c_group_0_mode
+            name: Mode
+            icon: mdi:autorenew
+          - type: action
+            icon: mdi:format-list-bulleted
+            name: Zones
+            tap_action:
+              action: navigate
+              navigation_path: /messana-hvac/zones
+      - type: custom:mushroom-template-card
+        primary: Messana System
+        secondary: >
+          Power: {{ 'On' if is_state('switch.system_power','on') else 'Off' }} •
+          Mode: {{ states('select.h_c_group_0_mode') }}
+        icon: mdi:water-thermometer
+        entity: switch.system_power
+        tap_action:
+          action: more-info
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Zones Active
+            secondary: |
+              {{
+                [
+                  'binary_sensor.basement_active',
+                  'binary_sensor.bedroom_2_3_active',
+                  'binary_sensor.bedroom_4_active',
+                  'binary_sensor.breakfast_kitchen_active',
+                  'binary_sensor.dining_room_active',
+                  'binary_sensor.foyer_active',
+                  'binary_sensor.great_room_active',
+                  'binary_sensor.guest_bedroom_active',
+                  'binary_sensor.lounge_study_active',
+                  'binary_sensor.master_bedroom_active',
+                  'binary_sensor.office_active',
+                  'binary_sensor.retreat_active'
+                ]
+                | map('states')
+                | select('eq','on')
+                | list
+                | length
+              }} / 12
+            icon: mdi:fire
+            tap_action:
+              action: navigate
+              navigation_path: /messana-hvac/zones
+          - type: custom:mushroom-template-card
+            primary: Avg Humidity
+            secondary: |
+              {% set vals = [
+                states('sensor.basement_humidity'),
+                states('sensor.bedroom_2_3_humidity'),
+                states('sensor.bedroom_4_humidity'),
+                states('sensor.breakfast_kitchen_humidity'),
+                states('sensor.dining_room_humidity'),
+                states('sensor.foyer_humidity'),
+                states('sensor.great_room_humidity'),
+                states('sensor.guest_bedroom_humidity'),
+                states('sensor.lounge_study_humidity'),
+                states('sensor.master_bedroom_humidity'),
+                states('sensor.office_humidity'),
+                states('sensor.retreat_humidity')
+              ] %}
+              {% set nums = vals
+                | reject('in', ['unknown','unavailable','none',''])
+                | map('float')
+                | select('>=', 0)
+                | select('<=', 100)
+                | list
+              %}
+              {% if (nums | length) > 0 %}
+                {{ ((nums | sum) / (nums | length)) | round(1) }}%
+              {% else %}
+                —
+              {% endif %}
+            icon: mdi:water-percent
+            tap_action:
+              action: none
+      - type: custom:mushroom-title-card
+        title: Plant
+      - type: markdown
+        content: >
+          **Coming next:** Raymagic / Buffer Tank / ATU blocks (like the Messana
+          app).
+
+
+          Once the integration exposes plant entities, we’ll replace this
+          section with real cards.
+  - title: Zones
+    path: zones
+    icon: mdi:home-thermometer-outline
+    cards:
+      - type: custom:mushroom-chips-card
+        chips:
+          - type: template
+            content: Back
+            icon: mdi:arrow-left
+            tap_action:
+              action: navigate
+              navigation_path: /messana-hvac/system
+          - type: entity
+            entity: switch.system_power
+            name: Power
+          - type: entity
+            entity: select.h_c_group_0_mode
+            name: Mode
+      - type: custom:mushroom-title-card
+        title: Basement
+      - type: grid
+        columns: 1
+        square: false
+        cards: null
+      - type: custom:stack-in-card
+        cards:
+          - type: horizontal-stack
+            cards:
+              - type: custom:mushroom-template-card
+                entity: climate.basement
+                primary: Basement
+                secondary: Test
+                card_mod:
+                  style: |
+                    ha-card { width: 100%; }
+              - type: custom:mushroom-template-card
+                primary: ''
+                secondary: ''
+                icon: mdi:calendar-remove
+                icon_color: amber
+                tap_action:
+                  action: call-service
+                  service: button.press
+                  target:
+                    entity_id: button.basement_detach_schedule
+                visibility:
+                  - condition: template
+                    value_template: >
+                      {{ state_attr('climate.basement','control_source') in
+                      ['program','program_enabled'] }}
+                card_mod:
+                  style: |
+                    :host { flex: 0 0 64px !important; }
+                    ha-card { width: 64px !important; }
+        card_mod:
+          style: |
+            /* ensure the horizontal-stack distributes children properly */
+            #root > * {
+              width: 100%;
+            }
+            /* remove inner chrome so it looks like one pill */
+            #root > * ha-card {
+              box-shadow: none !important;
+              border: none !important;
+              background: none !important;
+            }
+
+                
+                - type: custom:stack-in-card
+                  cards:
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:mushroom-template-card
+                          entity: climate.basement
+                          primary: Basement
+                          secondary: >-
+                            {% set cur = state_attr(entity,'current_temperature') %}
+                            {% set tgt = state_attr(entity,'temperature') %} {% set
+                            rh  = states('sensor.basement_humidity') %} {% set rhv =
+                            rh | float(-9999) %} {% set ts  =
+                            state_attr(entity,'thermal_status') | int(0) %} {{ (cur |
+                            round(1)) if cur is number else '—' }}° → {{ (tgt |
+                            round(1)) if tgt is number else '—' }}° • {{ (rhv |
+                            round(1)) if rhv > -3000 else '—' }}% {{ "\n" }} {% if ts
+                            == 1 %}Heating{% elif ts == 2 %}Cooling{% elif ts == 3
+                            %}Heating + Cooling{% else %}Idle{% endif %} {% set cs =
+                            state_attr(entity,'control_source') %} {{ "\n" }}• {% if
+                            cs == "program" %}Scheduled{% elif cs == "program_enabled"
+                            %}Schedule enabled{% else %}Manual{% endif %}
+                          icon: >-
+                            {% set ts = state_attr(entity,'thermal_status') | int(0)
+                            %} {% if ts == 1 or ts == 3 %} mdi:radiator {% elif ts ==
+                            2 %} mdi:snowflake {% else %} mdi:radiator-disabled {%
+                            endif %}
+                          icon_color: >-
+                            {% set ts = state_attr(entity,'thermal_status') | int(0)
+                            %} {% if ts == 1 or ts == 3 %} orange {% elif ts == 2 %}
+                            blue {% else %} disabled {% endif %}
+                          tap_action:
+                            action: more-info
+                          card_mod:
+                            style: |
+                              ha-card { width: 100%; }
+                        - type: custom:mushroom-template-card
+                          primary: ''
+                          secondary: ''
+                          icon: mdi:calendar-remove
+                          icon_color: amber
+                          tap_action:
+                            action: call-service
+                            service: button.press
+                            target:
+                              entity_id: button.basement_detach_schedule
+                          hold_action:
+                            action: none
+                          double_tap_action:
+                            action: none
+                          visibility:
+                            - condition: template
+                              value_template: >
+                                {{ state_attr('climate.basement','control_source') in
+                                ['program','program_enabled'] }}
+                          card_mod:
+                            style: |
+                              ha-card {
+                                width: 64px;
+                                min-width: 64px;
+                                max-width: 64px;
+                                margin: 0;
+                              }
+                  card_mod:
+                    style: |
+                      #root > * { margin: 0 !important; }
+                      #root > * ha-card {
+                        box-shadow: none !important;
+                        border: none !important;
+                        background: none !important;
+                      }
+                      #root > *:nth-child(1) > *:nth-child(2) ha-card {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                      }
+      - type: custom:mushroom-title-card
+        title: Floor 1
+      - type: grid
+        columns: 1
+        square: false
+        cards:
+          - type: custom:stack-in-card
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    entity: climate.foyer
+                    primary: Foyer
+                    secondary: >-
+                      {% set cur = state_attr(entity,'current_temperature') %}
+                      {% set tgt = state_attr(entity,'temperature') %} {% set
+                      rh  = states('sensor.foyer_humidity') %} {% set rhv = rh |
+                      float(-9999) %} {% set ts  =
+                      state_attr(entity,'thermal_status') | int(0) %} {{ (cur |
+                      round(1)) if cur is number else '—' }}° → {{ (tgt |
+                      round(1)) if tgt is number else '—' }}° • {{ (rhv |
+                      round(1)) if rhv > -3000 else '—' }}% {{ "\n" }} {% if ts
+                      == 1 %}Heating{% elif ts == 2 %}Cooling{% elif ts == 3
+                      %}Heating + Cooling{% else %}Idle{% endif %} {% set cs =
+                      state_attr(entity,'control_source') %} {{ "\n" }}• {% if
+                      cs == "program" %}Scheduled{% elif cs == "program_enabled"
+                      %}Schedule enabled{% else %}Manual{% endif %}
+                    icon: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} mdi:radiator {% elif ts ==
+                      2 %} mdi:snowflake {% else %} mdi:radiator-disabled {%
+                      endif %}
+                    icon_color: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} orange {% elif ts == 2 %}
+                      blue {% else %} disabled {% endif %}
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        ha-card { width: 100%; }
+                  - type: custom:mushroom-template-card
+                    primary: ''
+                    secondary: ''
+                    icon: mdi:calendar-remove
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.foyer_detach_schedule
+                    hold_action:
+                      action: none
+                    double_tap_action:
+                      action: none
+                    visibility:
+                      - condition: template
+                        value_template: >
+                          {{ state_attr('climate.foyer','control_source') in
+                          ['program','program_enabled'] }}
+                    card_mod:
+                      style: |
+                        ha-card {
+                          width: 64px;
+                          min-width: 64px;
+                          max-width: 64px;
+                          margin: 0;
+                        }
+            card_mod:
+              style: |
+                #root > * { margin: 0 !important; }
+                #root > * ha-card {
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: none !important;
+                }
+                #root > *:nth-child(1) > *:nth-child(2) ha-card {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+          - type: custom:stack-in-card
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    entity: climate.breakfast_kitchen
+                    primary: Breakfast/Kitchen
+                    secondary: >-
+                      {% set cur = state_attr(entity,'current_temperature') %}
+                      {% set tgt = state_attr(entity,'temperature') %} {% set
+                      rh  = states('sensor.breakfast_kitchen_humidity') %} {%
+                      set rhv = rh | float(-9999) %} {% set ts  =
+                      state_attr(entity,'thermal_status') | int(0) %} {{ (cur |
+                      round(1)) if cur is number else '—' }}° → {{ (tgt |
+                      round(1)) if tgt is number else '—' }}° • {{ (rhv |
+                      round(1)) if rhv > -3000 else '—' }}% {{ "\n" }} {% if ts
+                      == 1 %}Heating{% elif ts == 2 %}Cooling{% elif ts == 3
+                      %}Heating + Cooling{% else %}Idle{% endif %} {% set cs =
+                      state_attr(entity,'control_source') %} {{ "\n" }}• {% if
+                      cs == "program" %}Scheduled{% elif cs == "program_enabled"
+                      %}Schedule enabled{% else %}Manual{% endif %}
+                    icon: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} mdi:radiator {% elif ts ==
+                      2 %} mdi:snowflake {% else %} mdi:radiator-disabled {%
+                      endif %}
+                    icon_color: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} orange {% elif ts == 2 %}
+                      blue {% else %} disabled {% endif %}
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        ha-card { width: 100%; }
+                  - type: custom:mushroom-template-card
+                    primary: ''
+                    secondary: ''
+                    icon: mdi:calendar-remove
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.breakfast_kitchen_detach_schedule
+                    hold_action:
+                      action: none
+                    double_tap_action:
+                      action: none
+                    visibility:
+                      - condition: template
+                        value_template: >
+                          {{
+                          state_attr('climate.breakfast_kitchen','control_source')
+                          in ['program','program_enabled'] }}
+                    card_mod:
+                      style: |
+                        ha-card {
+                          width: 64px;
+                          min-width: 64px;
+                          max-width: 64px;
+                          margin: 0;
+                        }
+            card_mod:
+              style: |
+                #root > * { margin: 0 !important; }
+                #root > * ha-card {
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: none !important;
+                }
+                #root > *:nth-child(1) > *:nth-child(2) ha-card {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+          - type: custom:stack-in-card
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    entity: climate.great_room
+                    primary: Great Room
+                    secondary: >-
+                      {% set cur = state_attr(entity,'current_temperature') %}
+                      {% set tgt = state_attr(entity,'temperature') %} {% set
+                      rh  = states('sensor.great_room_humidity') %} {% set rhv =
+                      rh | float(-9999) %} {% set ts  =
+                      state_attr(entity,'thermal_status') | int(0) %} {{ (cur |
+                      round(1)) if cur is number else '—' }}° → {{ (tgt |
+                      round(1)) if tgt is number else '—' }}° • {{ (rhv |
+                      round(1)) if rhv > -3000 else '—' }}% {{ "\n" }} {% if ts
+                      == 1 %}Heating{% elif ts == 2 %}Cooling{% elif ts == 3
+                      %}Heating + Cooling{% else %}Idle{% endif %} {% set cs =
+                      state_attr(entity,'control_source') %} {{ "\n" }}• {% if
+                      cs == "program" %}Scheduled{% elif cs == "program_enabled"
+                      %}Schedule enabled{% else %}Manual{% endif %}
+                    icon: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} mdi:radiator {% elif ts ==
+                      2 %} mdi:snowflake {% else %} mdi:radiator-disabled {%
+                      endif %}
+                    icon_color: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} orange {% elif ts == 2 %}
+                      blue {% else %} disabled {% endif %}
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        ha-card { width: 100%; }
+                  - type: custom:mushroom-template-card
+                    primary: ''
+                    secondary: ''
+                    icon: mdi:calendar-remove
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.great_room_detach_schedule
+                    hold_action:
+                      action: none
+                    double_tap_action:
+                      action: none
+                    visibility:
+                      - condition: template
+                        value_template: >
+                          {{ state_attr('climate.great_room','control_source')
+                          in ['program','program_enabled'] }}
+                    card_mod:
+                      style: |
+                        ha-card {
+                          width: 64px;
+                          min-width: 64px;
+                          max-width: 64px;
+                          margin: 0;
+                        }
+            card_mod:
+              style: |
+                #root > * { margin: 0 !important; }
+                #root > * ha-card {
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: none !important;
+                }
+                #root > *:nth-child(1) > *:nth-child(2) ha-card {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+          - type: custom:stack-in-card
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    entity: climate.dining_room
+                    primary: Dining Room
+                    secondary: >-
+                      {% set cur = state_attr(entity,'current_temperature') %}
+                      {% set tgt = state_attr(entity,'temperature') %} {% set
+                      rh  = states('sensor.dining_room_humidity') %} {% set rhv
+                      = rh | float(-9999) %} {% set ts  =
+                      state_attr(entity,'thermal_status') | int(0) %} {{ (cur |
+                      round(1)) if cur is number else '—' }}° → {{ (tgt |
+                      round(1)) if tgt is number else '—' }}° • {{ (rhv |
+                      round(1)) if rhv > -3000 else '—' }}% {{ "\n" }} {% if ts
+                      == 1 %}Heating{% elif ts == 2 %}Cooling{% elif ts == 3
+                      %}Heating + Cooling{% else %}Idle{% endif %} {% set cs =
+                      state_attr(entity,'control_source') %} {{ "\n" }}• {% if
+                      cs == "program" %}Scheduled{% elif cs == "program_enabled"
+                      %}Schedule enabled{% else %}Manual{% endif %}
+                    icon: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} mdi:radiator {% elif ts ==
+                      2 %} mdi:snowflake {% else %} mdi:radiator-disabled {%
+                      endif %}
+                    icon_color: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} orange {% elif ts == 2 %}
+                      blue {% else %} disabled {% endif %}
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        ha-card { width: 100%; }
+                  - type: custom:mushroom-template-card
+                    primary: ''
+                    secondary: ''
+                    icon: mdi:calendar-remove
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.dining_room_detach_schedule
+                    hold_action:
+                      action: none
+                    double_tap_action:
+                      action: none
+                    visibility:
+                      - condition: template
+                        value_template: >
+                          {{ state_attr('climate.dining_room','control_source')
+                          in ['program','program_enabled'] }}
+                    card_mod:
+                      style: |
+                        ha-card {
+                          width: 64px;
+                          min-width: 64px;
+                          max-width: 64px;
+                          margin: 0;
+                        }
+            card_mod:
+              style: |
+                #root > * { margin: 0 !important; }
+                #root > * ha-card {
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: none !important;
+                }
+                #root > *:nth-child(1) > *:nth-child(2) ha-card {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+          - type: custom:stack-in-card
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    entity: climate.office
+                    primary: Office
+                    secondary: >-
+                      {% set cur = state_attr(entity,'current_temperature') %}
+                      {% set tgt = state_attr(entity,'temperature') %} {% set
+                      rh  = states('sensor.office_humidity') %} {% set rhv = rh
+                      | float(-9999) %} {% set ts  =
+                      state_attr(entity,'thermal_status') | int(0) %} {{ (cur |
+                      round(1)) if cur is number else '—' }}° → {{ (tgt |
+                      round(1)) if tgt is number else '—' }}° • {{ (rhv |
+                      round(1)) if rhv > -3000 else '—' }}% {{ "\n" }} {% if ts
+                      == 1 %}Heating{% elif ts == 2 %}Cooling{% elif ts == 3
+                      %}Heating + Cooling{% else %}Idle{% endif %} {% set cs =
+                      state_attr(entity,'control_source') %} {{ "\n" }}• {% if
+                      cs == "program" %}Scheduled{% elif cs == "program_enabled"
+                      %}Schedule enabled{% else %}Manual{% endif %}
+                    icon: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} mdi:radiator {% elif ts ==
+                      2 %} mdi:snowflake {% else %} mdi:radiator-disabled {%
+                      endif %}
+                    icon_color: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} orange {% elif ts == 2 %}
+                      blue {% else %} disabled {% endif %}
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        ha-card { width: 100%; }
+                  - type: custom:mushroom-template-card
+                    primary: ''
+                    secondary: ''
+                    icon: mdi:calendar-remove
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.office_detach_schedule
+                    hold_action:
+                      action: none
+                    double_tap_action:
+                      action: none
+                    visibility:
+                      - condition: template
+                        value_template: >
+                          {{ state_attr('climate.office','control_source') in
+                          ['program','program_enabled'] }}
+                    card_mod:
+                      style: |
+                        ha-card {
+                          width: 64px;
+                          min-width: 64px;
+                          max-width: 64px;
+                          margin: 0;
+                        }
+            card_mod:
+              style: |
+                #root > * { margin: 0 !important; }
+                #root > * ha-card {
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: none !important;
+                }
+                #root > *:nth-child(1) > *:nth-child(2) ha-card {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+          - type: custom:stack-in-card
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    entity: climate.guest_bedroom
+                    primary: Guest Bedroom
+                    secondary: >-
+                      {% set cur = state_attr(entity,'current_temperature') %}
+                      {% set tgt = state_attr(entity,'temperature') %} {% set
+                      rh  = states('sensor.guest_bedroom_humidity') %} {% set
+                      rhv = rh | float(-9999) %} {% set ts  =
+                      state_attr(entity,'thermal_status') | int(0) %} {{ (cur |
+                      round(1)) if cur is number else '—' }}° → {{ (tgt |
+                      round(1)) if tgt is number else '—' }}° • {{ (rhv |
+                      round(1)) if rhv > -3000 else '—' }}% {{ "\n" }} {% if ts
+                      == 1 %}Heating{% elif ts == 2 %}Cooling{% elif ts == 3
+                      %}Heating + Cooling{% else %}Idle{% endif %} {% set cs =
+                      state_attr(entity,'control_source') %} {{ "\n" }}• {% if
+                      cs == "program" %}Scheduled{% elif cs == "program_enabled"
+                      %}Schedule enabled{% else %}Manual{% endif %}
+                    icon: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} mdi:radiator {% elif ts ==
+                      2 %} mdi:snowflake {% else %} mdi:radiator-disabled {%
+                      endif %}
+                    icon_color: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} orange {% elif ts == 2 %}
+                      blue {% else %} disabled {% endif %}
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        ha-card { width: 100%; }
+                  - type: custom:mushroom-template-card
+                    primary: ''
+                    secondary: ''
+                    icon: mdi:calendar-remove
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.guest_bedroom_detach_schedule
+                    hold_action:
+                      action: none
+                    double_tap_action:
+                      action: none
+                    visibility:
+                      - condition: template
+                        value_template: >
+                          {{
+                          state_attr('climate.guest_bedroom','control_source')
+                          in ['program','program_enabled'] }}
+                    card_mod:
+                      style: |
+                        ha-card {
+                          width: 64px;
+                          min-width: 64px;
+                          max-width: 64px;
+                          margin: 0;
+                        }
+            card_mod:
+              style: |
+                #root > * { margin: 0 !important; }
+                #root > * ha-card {
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: none !important;
+                }
+                #root > *:nth-child(1) > *:nth-child(2) ha-card {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+      - type: custom:mushroom-title-card
+        title: Floor 2
+      - type: grid
+        columns: 1
+        square: false
+        cards:
+          - type: custom:stack-in-card
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    entity: climate.lounge_study
+                    primary: Lounge/Study
+                    secondary: >-
+                      {% set cur = state_attr(entity,'current_temperature') %}
+                      {% set tgt = state_attr(entity,'temperature') %} {% set
+                      rh  = states('sensor.lounge_study_humidity') %} {% set rhv
+                      = rh | float(-9999) %} {% set ts  =
+                      state_attr(entity,'thermal_status') | int(0) %} {{ (cur |
+                      round(1)) if cur is number else '—' }}° → {{ (tgt |
+                      round(1)) if tgt is number else '—' }}° • {{ (rhv |
+                      round(1)) if rhv > -3000 else '—' }}% {{ "\n" }} {% if ts
+                      == 1 %}Heating{% elif ts == 2 %}Cooling{% elif ts == 3
+                      %}Heating + Cooling{% else %}Idle{% endif %} {% set cs =
+                      state_attr(entity,'control_source') %} {{ "\n" }}• {% if
+                      cs == "program" %}Scheduled{% elif cs == "program_enabled"
+                      %}Schedule enabled{% else %}Manual{% endif %}
+                    icon: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} mdi:radiator {% elif ts ==
+                      2 %} mdi:snowflake {% else %} mdi:radiator-disabled {%
+                      endif %}
+                    icon_color: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} orange {% elif ts == 2 %}
+                      blue {% else %} disabled {% endif %}
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        ha-card { width: 100%; }
+                  - type: custom:mushroom-template-card
+                    primary: ''
+                    secondary: ''
+                    icon: mdi:calendar-remove
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.lounge_study_detach_schedule
+                    hold_action:
+                      action: none
+                    double_tap_action:
+                      action: none
+                    visibility:
+                      - condition: template
+                        value_template: >
+                          {{ state_attr('climate.lounge_study','control_source')
+                          in ['program','program_enabled'] }}
+                    card_mod:
+                      style: |
+                        ha-card {
+                          width: 64px;
+                          min-width: 64px;
+                          max-width: 64px;
+                          margin: 0;
+                        }
+            card_mod:
+              style: |
+                #root > * { margin: 0 !important; }
+                #root > * ha-card {
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: none !important;
+                }
+                #root > *:nth-child(1) > *:nth-child(2) ha-card {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+          - type: custom:stack-in-card
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    entity: climate.bedroom_2_3
+                    primary: Bedroom 2 & 3
+                    secondary: >-
+                      {% set cur = state_attr(entity,'current_temperature') %}
+                      {% set tgt = state_attr(entity,'temperature') %} {% set
+                      rh  = states('sensor.bedroom_2_3_humidity') %} {% set rhv
+                      = rh | float(-9999) %} {% set ts  =
+                      state_attr(entity,'thermal_status') | int(0) %} {{ (cur |
+                      round(1)) if cur is number else '—' }}° → {{ (tgt |
+                      round(1)) if tgt is number else '—' }}° • {{ (rhv |
+                      round(1)) if rhv > -3000 else '—' }}% {{ "\n" }} {% if ts
+                      == 1 %}Heating{% elif ts == 2 %}Cooling{% elif ts == 3
+                      %}Heating + Cooling{% else %}Idle{% endif %} {% set cs =
+                      state_attr(entity,'control_source') %} {{ "\n" }}• {% if
+                      cs == "program" %}Scheduled{% elif cs == "program_enabled"
+                      %}Schedule enabled{% else %}Manual{% endif %}
+                    icon: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} mdi:radiator {% elif ts ==
+                      2 %} mdi:snowflake {% else %} mdi:radiator-disabled {%
+                      endif %}
+                    icon_color: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} orange {% elif ts == 2 %}
+                      blue {% else %} disabled {% endif %}
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        ha-card { width: 100%; }
+                  - type: custom:mushroom-template-card
+                    primary: ''
+                    secondary: ''
+                    icon: mdi:calendar-remove
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.bedroom_2_3_detach_schedule
+                    hold_action:
+                      action: none
+                    double_tap_action:
+                      action: none
+                    visibility:
+                      - condition: template
+                        value_template: >
+                          {{ state_attr('climate.bedroom_2_3','control_source')
+                          in ['program','program_enabled'] }}
+                    card_mod:
+                      style: |
+                        ha-card {
+                          width: 64px;
+                          min-width: 64px;
+                          max-width: 64px;
+                          margin: 0;
+                        }
+            card_mod:
+              style: |
+                #root > * { margin: 0 !important; }
+                #root > * ha-card {
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: none !important;
+                }
+                #root > *:nth-child(1) > *:nth-child(2) ha-card {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+          - type: custom:stack-in-card
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    entity: climate.bedroom_4
+                    primary: Bedroom 4
+                    secondary: >-
+                      {% set cur = state_attr(entity,'current_temperature') %}
+                      {% set tgt = state_attr(entity,'temperature') %} {% set
+                      rh  = states('sensor.bedroom_4_humidity') %} {% set rhv =
+                      rh | float(-9999) %} {% set ts  =
+                      state_attr(entity,'thermal_status') | int(0) %} {{ (cur |
+                      round(1)) if cur is number else '—' }}° → {{ (tgt |
+                      round(1)) if tgt is number else '—' }}° • {{ (rhv |
+                      round(1)) if rhv > -3000 else '—' }}% {{ "\n" }} {% if ts
+                      == 1 %}Heating{% elif ts == 2 %}Cooling{% elif ts == 3
+                      %}Heating + Cooling{% else %}Idle{% endif %} {% set cs =
+                      state_attr(entity,'control_source') %} {{ "\n" }}• {% if
+                      cs == "program" %}Scheduled{% elif cs == "program_enabled"
+                      %}Schedule enabled{% else %}Manual{% endif %}
+                    icon: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} mdi:radiator {% elif ts ==
+                      2 %} mdi:snowflake {% else %} mdi:radiator-disabled {%
+                      endif %}
+                    icon_color: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} orange {% elif ts == 2 %}
+                      blue {% else %} disabled {% endif %}
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        ha-card { width: 100%; }
+                  - type: custom:mushroom-template-card
+                    primary: ''
+                    secondary: ''
+                    icon: mdi:calendar-remove
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.bedroom_4_detach_schedule
+                    hold_action:
+                      action: none
+                    double_tap_action:
+                      action: none
+                    visibility:
+                      - condition: template
+                        value_template: >
+                          {{ state_attr('climate.bedroom_4','control_source') in
+                          ['program','program_enabled'] }}
+                    card_mod:
+                      style: |
+                        ha-card {
+                          width: 64px;
+                          min-width: 64px;
+                          max-width: 64px;
+                          margin: 0;
+                        }
+            card_mod:
+              style: |
+                #root > * { margin: 0 !important; }
+                #root > * ha-card {
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: none !important;
+                }
+                #root > *:nth-child(1) > *:nth-child(2) ha-card {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+          - type: custom:stack-in-card
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    entity: climate.master_bedroom
+                    primary: Master Bedroom
+                    secondary: >-
+                      {% set cur = state_attr(entity,'current_temperature') %}
+                      {% set tgt = state_attr(entity,'temperature') %} {% set
+                      rh  = states('sensor.master_bedroom_humidity') %} {% set
+                      rhv = rh | float(-9999) %} {% set ts  =
+                      state_attr(entity,'thermal_status') | int(0) %} {{ (cur |
+                      round(1)) if cur is number else '—' }}° → {{ (tgt |
+                      round(1)) if tgt is number else '—' }}° • {{ (rhv |
+                      round(1)) if rhv > -3000 else '—' }}% {{ "\n" }} {% if ts
+                      == 1 %}Heating{% elif ts == 2 %}Cooling{% elif ts == 3
+                      %}Heating + Cooling{% else %}Idle{% endif %} {% set cs =
+                      state_attr(entity,'control_source') %} {{ "\n" }}• {% if
+                      cs == "program" %}Scheduled{% elif cs == "program_enabled"
+                      %}Schedule enabled{% else %}Manual{% endif %}
+                    icon: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} mdi:radiator {% elif ts ==
+                      2 %} mdi:snowflake {% else %} mdi:radiator-disabled {%
+                      endif %}
+                    icon_color: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} orange {% elif ts == 2 %}
+                      blue {% else %} disabled {% endif %}
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        ha-card { width: 100%; }
+                  - type: custom:mushroom-template-card
+                    primary: ''
+                    secondary: ''
+                    icon: mdi:calendar-remove
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.master_bedroom_detach_schedule
+                    hold_action:
+                      action: none
+                    double_tap_action:
+                      action: none
+                    visibility:
+                      - condition: template
+                        value_template: >
+                          {{
+                          state_attr('climate.master_bedroom','control_source')
+                          in ['program','program_enabled'] }}
+                    card_mod:
+                      style: |
+                        ha-card {
+                          width: 64px;
+                          min-width: 64px;
+                          max-width: 64px;
+                          margin: 0;
+                        }
+            card_mod:
+              style: |
+                #root > * { margin: 0 !important; }
+                #root > * ha-card {
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: none !important;
+                }
+                #root > *:nth-child(1) > *:nth-child(2) ha-card {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
+          - type: custom:stack-in-card
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - type: custom:mushroom-template-card
+                    entity: climate.retreat
+                    primary: Retreat
+                    secondary: >-
+                      {% set cur = state_attr(entity,'current_temperature') %}
+                      {% set tgt = state_attr(entity,'temperature') %} {% set
+                      rh  = states('sensor.retreat_humidity') %} {% set rhv = rh
+                      | float(-9999) %} {% set ts  =
+                      state_attr(entity,'thermal_status') | int(0) %} {{ (cur |
+                      round(1)) if cur is number else '—' }}° → {{ (tgt |
+                      round(1)) if tgt is number else '—' }}° • {{ (rhv |
+                      round(1)) if rhv > -3000 else '—' }}% {{ "\n" }} {% if ts
+                      == 1 %}Heating{% elif ts == 2 %}Cooling{% elif ts == 3
+                      %}Heating + Cooling{% else %}Idle{% endif %} {% set cs =
+                      state_attr(entity,'control_source') %} {{ "\n" }}• {% if
+                      cs == "program" %}Scheduled{% elif cs == "program_enabled"
+                      %}Schedule enabled{% else %}Manual{% endif %}
+                    icon: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} mdi:radiator {% elif ts ==
+                      2 %} mdi:snowflake {% else %} mdi:radiator-disabled {%
+                      endif %}
+                    icon_color: >-
+                      {% set ts = state_attr(entity,'thermal_status') | int(0)
+                      %} {% if ts == 1 or ts == 3 %} orange {% elif ts == 2 %}
+                      blue {% else %} disabled {% endif %}
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        ha-card { width: 100%; }
+                  - type: custom:mushroom-template-card
+                    primary: ''
+                    secondary: ''
+                    icon: mdi:calendar-remove
+                    icon_color: amber
+                    tap_action:
+                      action: call-service
+                      service: button.press
+                      target:
+                        entity_id: button.retreat_detach_schedule
+                    hold_action:
+                      action: none
+                    double_tap_action:
+                      action: none
+                    visibility:
+                      - condition: template
+                        value_template: >
+                          {{ state_attr('climate.retreat','control_source') in
+                          ['program','program_enabled'] }}
+                    card_mod:
+                      style: |
+                        ha-card {
+                          width: 64px;
+                          min-width: 64px;
+                          max-width: 64px;
+                          margin: 0;
+                        }
+            card_mod:
+              style: |
+                #root > * { margin: 0 !important; }
+                #root > * ha-card {
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: none !important;
+                }
+                #root > *:nth-child(1) > *:nth-child(2) ha-card {
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                }
