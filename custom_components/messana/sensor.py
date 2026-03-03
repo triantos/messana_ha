@@ -6,7 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 
 from .const import DOMAIN
 from .coordinator import MessanaCoordinator
@@ -44,13 +44,14 @@ async def async_setup_entry(
     # Create sensors based on effective zone count for the same reason as climate.py.
     zone_count = int(coordinator.data.get("system", {}).get("effective_zone_count", 0))
 
-    entities: list[MessanaZoneSensor] = []
+    entities: list[SensorEntity] = []
     for zid in range(zone_count):
         for sdef in ZONE_SENSORS:
             entities.append(MessanaZoneSensor(coordinator, zid, sdef))
-    
-    # entities.append(MessanaRawSampleSensor(coordinator, entry.entry_id))
 
+    hc_groups = coordinator.data.get("hc_groups", {})
+    for gid in sorted(hc_groups.keys()):
+        entities.append(MessanaExecutiveSeasonSensor(coordinator, int(gid)))
 
     async_add_entities(entities)
 
@@ -84,3 +85,26 @@ class MessanaZoneSensor(MessanaEntity, SensorEntity):
         zones = (self.coordinator.data or {}).get("zones", {})
         z = zones.get(self.zone_id, {})
         return z.get(self.sdef.key)
+
+
+SEASON_MAP = {0: "heating", 1: "cooling"}
+
+
+class MessanaExecutiveSeasonSensor(MessanaEntity, SensorEntity):
+    _attr_has_entity_name = True
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = ["heating", "cooling"]
+    _attr_icon = "mdi:sun-snowflake-variant"
+
+    def __init__(self, coordinator: MessanaCoordinator, group_id: int) -> None:
+        super().__init__(coordinator)
+        self.group_id = group_id
+        self._attr_unique_id = f"messana_hc_group_{group_id}_executive_season"
+        self._attr_name = f"H/C Group {group_id} Season"
+
+    @property
+    def native_value(self) -> str | None:
+        val = (self.coordinator.data or {}).get("hc_groups", {}).get(self.group_id, {}).get("executive_season")
+        if val is None:
+            return None
+        return SEASON_MAP.get(int(val), "heating")
