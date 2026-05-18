@@ -6,7 +6,6 @@ from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import MessanaCoordinator
@@ -14,7 +13,6 @@ from .api import MessanaClient
 from .entity import MessanaEntity
 
 
-# /api/hc/mode: 0 Heating, 1 Cooling, 2 Auto :contentReference[oaicite:40]{index=40}
 OPTIONS = ["Heating", "Cooling", "Auto"]
 OPTION_TO_VALUE = {"Heating": 0, "Cooling": 1, "Auto": 2}
 VALUE_TO_OPTION = {0: "Heating", 1: "Cooling", 2: "Auto"}
@@ -59,5 +57,5 @@ class MessanaHCModeSelect(MessanaEntity, SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         value = OPTION_TO_VALUE[option]
-        await self.client.set_hc_mode(self.group_id, value)  # :contentReference[oaicite:41]{index=41}
+        await self.client.set_hc_mode(self.group_id, value)
         await self.coordinator.async_request_refresh()

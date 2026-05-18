@@ -21,16 +21,18 @@ class MessanaZoneActiveBinarySensor(MessanaEntity, BinarySensorEntity):
     _attr_has_entity_name = True
     _attr_device_class = "running"
 
-    def __init__(self, coordinator: MessanaCoordinator, ref: ZoneActiveRef) -> None:
-        super().__init__(coordinator)
-        self._zone_id = ref.zone_id
+    def __init__(
+        self,
+        coordinator: MessanaCoordinator,
+        ref: ZoneActiveRef,
+        zone_name: str | None,
+    ) -> None:
+        super().__init__(coordinator, zone_id=ref.zone_id, zone_name=zone_name)
         self._attr_unique_id = f"{DOMAIN}_zone_{self._zone_id}_active"
 
     @property
     def name(self) -> str:
-        zone = (self.coordinator.data.get("zones", {}) or {}).get(self._zone_id, {})
-        zname = zone.get("name") or f"Zone {self._zone_id}"
-        return f"{zname} Active"
+        return "Active"
 
     @property
     def is_on(self) -> bool:
@@ -49,6 +51,7 @@ async def async_setup_entry(
 
     entities: list[MessanaZoneActiveBinarySensor] = []
     for zid in range(zone_count):
-        entities.append(MessanaZoneActiveBinarySensor(coordinator, ZoneActiveRef(zone_id=zid)))
+        zone_name = (coordinator.data.get("zones", {}).get(zid, {}) or {}).get("name")
+        entities.append(MessanaZoneActiveBinarySensor(coordinator, ZoneActiveRef(zone_id=zid), zone_name))
 
     async_add_entities(entities)

@@ -23,7 +23,8 @@
         "description": "Adjust polling and (optionally) override the zone count.",
         "data": {
           "scan_interval": "Polling interval (seconds)",
-          "zone_count_override": "Zone count override (0 = use API)"
+          "zone_count_override": "Zone count override (0 = use API)",
+          "detach_on_setpoint": "Detach zone schedule when manually setting temperature"
         }
       }
     }

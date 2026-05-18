@@ -10,7 +10,6 @@ from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 
 from .const import DOMAIN
 from .coordinator import MessanaCoordinator
-from .diagnostic import MessanaRawSampleSensor
 from .entity import MessanaEntity
 
 
@@ -46,8 +45,9 @@ async def async_setup_entry(
 
     entities: list[SensorEntity] = []
     for zid in range(zone_count):
+        zone_name = (coordinator.data.get("zones", {}).get(zid, {}) or {}).get("name")
         for sdef in ZONE_SENSORS:
-            entities.append(MessanaZoneSensor(coordinator, zid, sdef))
+            entities.append(MessanaZoneSensor(coordinator, zid, zone_name, sdef))
 
     hc_groups = coordinator.data.get("hc_groups", {})
     for gid in sorted(hc_groups.keys()):
@@ -59,8 +59,14 @@ async def async_setup_entry(
 class MessanaZoneSensor(MessanaEntity, SensorEntity):
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator: MessanaCoordinator, zone_id: int, sdef: ZoneSensorDef) -> None:
-        super().__init__(coordinator)
+    def __init__(
+        self,
+        coordinator: MessanaCoordinator,
+        zone_id: int,
+        zone_name: str | None,
+        sdef: ZoneSensorDef,
+    ) -> None:
+        super().__init__(coordinator, zone_id=zone_id, zone_name=zone_name)
         self.zone_id = zone_id
         self.sdef = sdef
         self._attr_unique_id = f"messana_zone_{zone_id}_{sdef.key}"
@@ -68,10 +74,7 @@ class MessanaZoneSensor(MessanaEntity, SensorEntity):
 
     @property
     def name(self) -> str:
-        zones = (self.coordinator.data or {}).get("zones", {})
-        z = zones.get(self.zone_id, {})
-        zone_name = z.get("name", f"Zone {self.zone_id}")
-        return f"{zone_name} {self.sdef.suffix}"
+        return self.sdef.suffix
 
     @property
     def native_unit_of_measurement(self) -> str | None:

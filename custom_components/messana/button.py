@@ -6,7 +6,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import slugify
-from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN
 from .coordinator import MessanaCoordinator
@@ -58,7 +57,7 @@ class MessanaDetachScheduleButton(MessanaEntity, ButtonEntity):
         zone_id: int,
         zone_name: str,
     ) -> None:
-        super().__init__(coordinator)
+        super().__init__(coordinator, zone_id=zone_id, zone_name=zone_name)
         self.zone_id = zone_id
 
         # New unique_id (entry-scoped)

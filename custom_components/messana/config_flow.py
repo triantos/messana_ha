@@ -13,8 +13,10 @@ from .const import (
     CONF_API_KEY,
     CONF_SCAN_INTERVAL,
     CONF_ZONE_COUNT_OVERRIDE,
+    CONF_DETACH_ON_SETPOINT,
     DEFAULT_SCAN_INTERVAL_SECONDS,
     DEFAULT_ZONE_COUNT_OVERRIDE,
+    DEFAULT_DETACH_ON_SETPOINT,
 )
 
 
@@ -40,6 +42,7 @@ class MessanaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     options={
                         CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL_SECONDS,
                         CONF_ZONE_COUNT_OVERRIDE: DEFAULT_ZONE_COUNT_OVERRIDE,
+                        CONF_DETACH_ON_SETPOINT: DEFAULT_DETACH_ON_SETPOINT,
                     },
                 )
             except MessanaAuthError:
@@ -53,7 +56,6 @@ class MessanaConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             {
                 vol.Required(CONF_BASE_URL, default="http://192.168.1.50"): str,
                 vol.Required(CONF_API_KEY): str,
-                vol.Optional(CONF_DETACH_ON_SETPOINT, default=options.get(CONF_DETACH_ON_SETPOINT, True)): bool,
             }
         )
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
@@ -73,6 +75,7 @@ class MessanaOptionsFlowHandler(config_entries.OptionsFlow):
 
         current_scan = int(self._entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_SECONDS))
         current_override = int(self._entry.options.get(CONF_ZONE_COUNT_OVERRIDE, DEFAULT_ZONE_COUNT_OVERRIDE))
+        current_detach = bool(self._entry.options.get(CONF_DETACH_ON_SETPOINT, DEFAULT_DETACH_ON_SETPOINT))
 
         schema = vol.Schema(
             {
@@ -82,6 +85,7 @@ class MessanaOptionsFlowHandler(config_entries.OptionsFlow):
                 vol.Required(CONF_ZONE_COUNT_OVERRIDE, default=current_override): vol.All(
                     vol.Coerce(int), vol.Range(min=0, max=256)
                 ),
+                vol.Required(CONF_DETACH_ON_SETPOINT, default=current_detach): bool,
             }
         )
 

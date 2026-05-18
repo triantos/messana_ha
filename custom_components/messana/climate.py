@@ -10,16 +10,14 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import CONF_DETACH_ON_SETPOINT, DOMAIN, DEFAULT_DETACH_ON_SETPOINT
 from .coordinator import MessanaCoordinator
 from .api import MessanaClient
 from .entity import MessanaEntity
 
 
 def _ha_temp_unit(messana_unit: str) -> UnitOfTemperature:
-    # /api/system/tempUnit returns "Celsius" or "Fahrenheit" :contentReference[oaicite:33]{index=33}
     if messana_unit.lower().startswith("f"):
         return UnitOfTemperature.FAHRENHEIT
     return UnitOfTemperature.CELSIUS
@@ -28,7 +26,6 @@ def _ha_temp_unit(messana_unit: str) -> UnitOfTemperature:
 def _hvac_mode_from_hc(mode: int, system_on: bool) -> HVACMode:
     if not system_on:
         return HVACMode.OFF
-    # /api/hc/mode: 0 heat, 1 cool, 2 auto :contentReference[oaicite:34]{index=34}
     if mode == 0:
         return HVACMode.HEAT
     if mode == 1:
@@ -57,7 +54,8 @@ async def async_setup_entry(
 
     entities: list[MessanaZoneClimate] = []
     for zid in range(zone_count):
-        entities.append(MessanaZoneClimate(coordinator, client, ZoneRef(zone_id=zid)))
+        zone_name = (coordinator.data.get("zones", {}).get(zid, {}) or {}).get("name")
+        entities.append(MessanaZoneClimate(coordinator, client, entry.entry_id, ZoneRef(zone_id=zid), zone_name))
 
     async_add_entities(entities)
 
@@ -67,17 +65,23 @@ class MessanaZoneClimate(MessanaEntity, ClimateEntity):
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
 
-    def __init__(self, coordinator: MessanaCoordinator, client: MessanaClient, zone: ZoneRef) -> None:
-        super().__init__(coordinator)
+    def __init__(
+        self,
+        coordinator: MessanaCoordinator,
+        client: MessanaClient,
+        entry_id: str,
+        zone: ZoneRef,
+        zone_name: str | None,
+    ) -> None:
+        super().__init__(coordinator, zone_id=zone.zone_id, zone_name=zone_name)
         self.client = client
+        self.entry_id = entry_id
         self.zone_id = zone.zone_id
         self._attr_unique_id = f"messana_zone_{self.zone_id}_climate"
 
     @property
-    def name(self) -> str:
-        zones = (self.coordinator.data or {}).get("zones", {})
-        z = zones.get(self.zone_id, {})
-        return z.get("name", f"Zone {self.zone_id}")
+    def name(self) -> str | None:
+        return None
 
     @property
     def available(self) -> bool:
@@ -154,26 +158,27 @@ class MessanaZoneClimate(MessanaEntity, ClimateEntity):
         schedule_on = int(z.get("schedule_on") or 0)
 
         detach_on_setpoint = bool(
-            self.coordinator.hass.data[DOMAIN][self.coordinator.entry_id].get("detach_on_setpoint", True)
+            self.coordinator.hass.data[DOMAIN][self.entry_id].get(
+                CONF_DETACH_ON_SETPOINT,
+                DEFAULT_DETACH_ON_SETPOINT,
+            )
         )
 
         if detach_on_setpoint and schedule_on:
             # Detach (disable schedule control) before setting manual setpoint
             await self.coordinator.client.set_zone_schedule_on(self.zone_id, False)
+            zone_name = z.get("name", f"Zone {self.zone_id + 1}")
 
             async_create_persistent_notification(
                 self.coordinator.hass,
                 title="Messana: Schedule detached",
-                message=f"Detached '{self.name}' from its schedule to set a manual temperature.",
+                message=f"Detached '{zone_name}' from its schedule to set a manual temperature.",
             )
 
         await self.coordinator.client.set_zone_setpoint(self.zone_id, float(temperature))
         await self.coordinator.async_request_refresh()
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
-        # Map HA hvac_mode to:
-        # - system power /api/system/status :contentReference[oaicite:36]{index=36}
-        # - hc group 0 mode /api/hc/mode :contentReference[oaicite:37]{index=37}
         if hvac_mode == HVACMode.OFF:
             await self.client.set_system_status(False)
             await self.coordinator.async_request_refresh()

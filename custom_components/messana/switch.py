@@ -3,7 +3,6 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.switch import SwitchEntity
 
 from .const import DOMAIN
@@ -37,9 +36,9 @@ class MessanaSystemPowerSwitch(MessanaEntity, SwitchEntity):
         return bool(self.coordinator.data.get("system", {}).get("status", 0))
 
     async def async_turn_on(self, **kwargs) -> None:
-        await self.client.set_system_status(True)  # :contentReference[oaicite:38]{index=38}
+        await self.client.set_system_status(True)
         await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **kwargs) -> None:
-        await self.client.set_system_status(False)  # :contentReference[oaicite:39]{index=39}
+        await self.client.set_system_status(False)
         await self.coordinator.async_request_refresh()
