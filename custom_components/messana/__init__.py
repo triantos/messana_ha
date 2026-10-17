@@ -33,6 +33,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         client,
         scan_interval_seconds=scan_interval,
         zone_count_override=zone_count_override,
+        config_entry=entry,
     )
     await coordinator.async_config_entry_first_refresh()
 

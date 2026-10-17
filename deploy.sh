@@ -1,11 +1,13 @@
 #!/bin/bash
 # Deploy Messana integration to HAOS
-# Requires: HAOS SSH add-on (Advanced SSH & Web Terminal)
-HAOS_HOST="homeassistant.home.triantos.com"
-HAOS_PORT="22222"
+# Uses the existing SSH alias, including its user, port, and key settings.
+set -euo pipefail
+cd "$(dirname "$0")"
+HAOS_HOST="${HAOS_HOST:-homeassistant}"
 
-rsync -av --delete -e "ssh -p $HAOS_PORT" \
-  custom_components/messana/ \
-  root@${HAOS_HOST}:/config/custom_components/messana/
+ssh "$HAOS_HOST" 'sudo -n test -d /config/custom_components/messana'
+COPYFILE_DISABLE=1 tar --exclude='__pycache__' --exclude='*.pyc' \
+  -C custom_components/messana -cf - . \
+  | ssh "$HAOS_HOST" 'sudo -n tar --no-same-owner -xf - -C /config/custom_components/messana'
 
-ssh -p $HAOS_PORT root@${HAOS_HOST} 'ha core restart'
+echo 'Files copied. Restart Home Assistant to load changed Python source.'

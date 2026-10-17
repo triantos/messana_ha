@@ -1,0 +1,1099 @@
+{
+  "title": "Messana HVAC",
+  "views": [
+    {
+      "title": "System",
+      "path": "system",
+      "icon": "mdi:home-thermometer",
+      "type": "sections",
+      "max_columns": 2,
+      "header": {
+        "card": {
+          "type": "markdown",
+          "content": "# Home climate\nOne shared season. A temperature and schedule for each room."
+        }
+      },
+      "sections": [
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Whole house",
+              "icon": "mdi:home-thermometer"
+            },
+            {
+              "type": "custom:mushroom-chips-card",
+              "alignment": "start",
+              "chips": [
+                {
+                  "type": "entity",
+                  "entity": "switch.system_power",
+                  "name": "System",
+                  "tap_action": {
+                    "action": "more-info"
+                  }
+                },
+                {
+                  "type": "entity",
+                  "entity": "select.h_c_group_0_mode",
+                  "name": "House mode",
+                  "tap_action": {
+                    "action": "more-info"
+                  }
+                },
+                {
+                  "type": "action",
+                  "icon": "mdi:thermometer",
+                  "tap_action": {
+                    "action": "navigate",
+                    "navigation_path": "/messana-hvac/defaults"
+                  }
+                }
+              ],
+              "grid_options": {
+                "columns": 12
+              }
+            },
+            {
+              "type": "custom:mushroom-template-card",
+              "entity": "switch.system_power",
+              "primary": "{{ 'System on' if is_state(entity,'on') else 'System off' }}",
+              "secondary": "{{ states('select.h_c_group_0_mode') }} · shared heating/cooling mode",
+              "icon": "mdi:water-thermometer",
+              "icon_color": "{% if not is_state(entity,'on') %}disabled{% elif is_state('select.h_c_group_0_mode','Heating') %}orange{% elif is_state('select.h_c_group_0_mode','Cooling') %}blue{% else %}teal{% endif %}",
+              "tap_action": {
+                "action": "more-info"
+              },
+              "card_mod": {
+                "style": "ha-card { border-radius: 22px; padding: 12px 6px; }"
+              }
+            },
+            {
+              "type": "custom:mushroom-template-card",
+              "primary": "Rooms",
+              "secondary": "{% set ids = [\"climate.basement\",\"climate.foyer\",\"climate.guest_bedroom\",\"climate.breakfast_kitchen\",\"climate.great_room\",\"climate.dining_room\",\"climate.office\",\"climate.lounge_study\",\"climate.master_bedroom\",\"climate.retreat\",\"climate.bedroom_2_3\",\"climate.bedroom_4\"] %}{% set ns=namespace(heating=0,cooling=0,off=0,idle=0,unavailable=0) %}{% for id in ids %}{% if states(id) in ['unknown','unavailable'] %}{% set ns.unavailable=ns.unavailable+1 %}{% elif is_state(id,'off') %}{% set ns.off=ns.off+1 %}{% elif state_attr(id,'hvac_action')=='heating' %}{% set ns.heating=ns.heating+1 %}{% elif state_attr(id,'hvac_action')=='cooling' %}{% set ns.cooling=ns.cooling+1 %}{% else %}{% set ns.idle=ns.idle+1 %}{% endif %}{% endfor %}{{ns.heating}} heating · {{ns.cooling}} cooling · {{ns.idle}} idle\n{{ns.off}} off{% if ns.unavailable %} · {{ns.unavailable}} unavailable{% endif %}",
+              "multiline_secondary": true,
+              "icon": "mdi:floor-plan",
+              "tap_action": {
+                "action": "navigate",
+                "navigation_path": "/messana-hvac/zones"
+              }
+            },
+            {
+              "type": "markdown",
+              "content": "**Floor 2 is off because of a leak.** Its five room cards are display-only. The whole-house mode does not describe whether an individual room is on."
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Explore",
+              "icon": "mdi:view-dashboard-outline"
+            },
+            {
+              "type": "custom:mushroom-template-card",
+              "primary": "Rooms",
+              "secondary": "Temperatures, schedules and live activity",
+              "icon": "mdi:home-thermometer-outline",
+              "tap_action": {
+                "action": "navigate",
+                "navigation_path": "/messana-hvac/zones"
+              }
+            },
+            {
+              "type": "custom:mushroom-template-card",
+              "primary": "Default temperatures",
+              "secondary": "Room defaults and the whole-house default",
+              "icon": "mdi:thermometer",
+              "tap_action": {
+                "action": "navigate",
+                "navigation_path": "/messana-hvac/defaults"
+              }
+            },
+            {
+              "type": "custom:mushroom-template-card",
+              "primary": "Messana app",
+              "secondary": "Equipment, schedules and advanced settings",
+              "icon": "mdi:open-in-new",
+              "tap_action": {
+                "action": "url",
+                "url_path": "http://messana.home.triantos.com/home"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Zones",
+      "path": "zones",
+      "icon": "mdi:home-thermometer-outline",
+      "type": "sections",
+      "max_columns": 2,
+      "header": {
+        "card": {
+          "type": "markdown",
+          "content": "# Your rooms\nOrange: heating · Blue: cooling · Grey: off or unavailable. Idle rooms use a neutral card."
+        }
+      },
+      "sections": [
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Basement",
+              "icon": "mdi:home-floor-b",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "custom:mushroom-chips-card",
+              "alignment": "start",
+              "chips": [
+                {
+                  "type": "entity",
+                  "entity": "switch.system_power",
+                  "name": "System",
+                  "tap_action": {
+                    "action": "more-info"
+                  }
+                },
+                {
+                  "type": "entity",
+                  "entity": "select.h_c_group_0_mode",
+                  "name": "House mode",
+                  "tap_action": {
+                    "action": "more-info"
+                  }
+                },
+                {
+                  "type": "action",
+                  "icon": "mdi:thermometer",
+                  "tap_action": {
+                    "action": "navigate",
+                    "navigation_path": "/messana-hvac/defaults"
+                  }
+                }
+              ],
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "custom:stack-in-card",
+              "mode": "vertical",
+              "cards": [
+                {
+                  "type": "custom:mushroom-template-card",
+                  "entity": "climate.basement",
+                  "primary": "Basement",
+                  "secondary": "{% set s=states(entity) %}{% set t=state_attr(entity,'current_temperature') %}{% set target=state_attr(entity,'temperature') %}{% set rh=state_attr(entity,'humidity') %}{{ t|round(1) if t is number else '—' }}°F{% if s not in ['off','unknown','unavailable'] %}  →  {{ target|round(1) if target is number else '—' }}°F{% endif %}\n{% set s = states(entity) %}{% set a = state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}Unavailable{% elif s == 'off' %}Off{% elif a == 'heating' %}Heating{% elif a == 'cooling' %}Cooling{% else %}Idle{% endif %}{% if s not in ['off','unknown','unavailable'] %}\n{% if state_attr(entity,'target_source') == 'override' %}Temporary override{% elif state_attr(entity,'target_source') == 'schedule' %}{{ state_attr(entity,'schedule_name') or 'Schedule' }}{% else %}Room default{% endif %}{% endif %}",
+                  "multiline_secondary": true,
+                  "icon": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}mdi:cloud-off-outline{% elif s=='off' %}mdi:power{% elif a=='heating' %}mdi:radiator{% elif a=='cooling' %}mdi:snowflake{% else %}mdi:thermometer{% endif %}",
+                  "icon_color": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['off','unknown','unavailable'] %}disabled{% elif a=='heating' %}orange{% elif a=='cooling' %}blue{% else %}grey{% endif %}",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "hold_action": {
+                    "action": "none"
+                  },
+                  "double_tap_action": {
+                    "action": "none"
+                  },
+                  "card_mod": {
+                    "style": "ha-card { border: none !important; background: transparent !important; box-shadow: none !important; min-height: 105px; border-radius: 0; padding-bottom: 0; }"
+                  }
+                },
+                {
+                  "type": "custom:mushroom-chips-card",
+                  "alignment": "end",
+                  "chips": [
+                    {
+                      "type": "template",
+                      "icon": "mdi:water-percent",
+                      "content": "{% set dp=state_attr('climate.basement','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.basement','default_temperature_unit') == '°F' else 16) %}{% set rh=state_attr('climate.basement','humidity') %}{% if states('climate.basement') in ['unknown','unavailable'] or rh is not number %}Humidity unavailable{% else %}{{ rh|round(1) }}% RH{% if high %} · High{% endif %}{% endif %}",
+                      "icon_color": "{% set dp=state_attr('climate.basement','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.basement','default_temperature_unit') == '°F' else 16) %}{{ 'disabled' if states('climate.basement') in ['unknown','unavailable'] else 'red' if high else 'grey' }}",
+                      "tap_action": {
+                        "action": "none"
+                      },
+                      "hold_action": {
+                        "action": "none"
+                      },
+                      "double_tap_action": {
+                        "action": "none"
+                      }
+                    }
+                  ],
+                  "card_mod": {
+                    "style": {
+                      "mushroom-template-chip$": "mushroom-chip, span { --text-color: {% set dp=state_attr('climate.basement','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.basement','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.basement') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }}; color: {% set dp=state_attr('climate.basement','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.basement','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.basement') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }} !important; }",
+                      ".": ":host { padding: 0 16px 12px; }"
+                    }
+                  }
+                }
+              ],
+              "grid_options": {
+                "columns": 12
+              },
+              "card_mod": {
+                "style": "{% set s=states('climate.basement') %}{% set a=state_attr('climate.basement','hvac_action') %}\nha-card {\n border-radius: 22px;\n min-height: 150px;\n padding: 0;\n {% if s in ['unknown','unavailable'] %}\n background: rgba(120,130,140,0.035);\n border: 1px dashed rgba(120,130,140,0.28);\n {% elif s=='off' %}\n background: rgba(120,130,140,0.055);\n border: 1px solid rgba(120,130,140,0.14);\n {% elif a=='heating' %}\n background: rgba(245,158,11,0.13);\n border: 1px solid rgba(245,158,11,0.42);\n {% elif a=='cooling' %}\n background: rgba(59,130,246,0.13);\n border: 1px solid rgba(59,130,246,0.42);\n {% else %}\n background: var(--ha-card-background, var(--card-background-color));\n border: 1px solid var(--divider-color);\n {% endif %}\n}\n\nha-card { --card-primary-font-size: 17px; --card-secondary-font-size: 14px; }\n"
+              }
+            }
+          ],
+          "column_span": 2
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Floor 1",
+              "icon": "mdi:home-floor-1",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "custom:stack-in-card",
+              "mode": "vertical",
+              "cards": [
+                {
+                  "type": "custom:mushroom-template-card",
+                  "entity": "climate.foyer",
+                  "primary": "Foyer",
+                  "secondary": "{% set s=states(entity) %}{% set t=state_attr(entity,'current_temperature') %}{% set target=state_attr(entity,'temperature') %}{% set rh=state_attr(entity,'humidity') %}{{ t|round(1) if t is number else '—' }}°F{% if s not in ['off','unknown','unavailable'] %}  →  {{ target|round(1) if target is number else '—' }}°F{% endif %}\n{% set s = states(entity) %}{% set a = state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}Unavailable{% elif s == 'off' %}Off{% elif a == 'heating' %}Heating{% elif a == 'cooling' %}Cooling{% else %}Idle{% endif %}{% if s not in ['off','unknown','unavailable'] %}\n{% if state_attr(entity,'target_source') == 'override' %}Temporary override{% elif state_attr(entity,'target_source') == 'schedule' %}{{ state_attr(entity,'schedule_name') or 'Schedule' }}{% else %}Room default{% endif %}{% endif %}",
+                  "multiline_secondary": true,
+                  "icon": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}mdi:cloud-off-outline{% elif s=='off' %}mdi:power{% elif a=='heating' %}mdi:radiator{% elif a=='cooling' %}mdi:snowflake{% else %}mdi:thermometer{% endif %}",
+                  "icon_color": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['off','unknown','unavailable'] %}disabled{% elif a=='heating' %}orange{% elif a=='cooling' %}blue{% else %}grey{% endif %}",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "hold_action": {
+                    "action": "none"
+                  },
+                  "double_tap_action": {
+                    "action": "none"
+                  },
+                  "card_mod": {
+                    "style": "ha-card { border: none !important; background: transparent !important; box-shadow: none !important; min-height: 105px; border-radius: 0; padding-bottom: 0; }"
+                  }
+                },
+                {
+                  "type": "custom:mushroom-chips-card",
+                  "alignment": "end",
+                  "chips": [
+                    {
+                      "type": "template",
+                      "icon": "mdi:water-percent",
+                      "content": "{% set dp=state_attr('climate.foyer','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.foyer','default_temperature_unit') == '°F' else 16) %}{% set rh=state_attr('climate.foyer','humidity') %}{% if states('climate.foyer') in ['unknown','unavailable'] or rh is not number %}Humidity unavailable{% else %}{{ rh|round(1) }}% RH{% if high %} · High{% endif %}{% endif %}",
+                      "icon_color": "{% set dp=state_attr('climate.foyer','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.foyer','default_temperature_unit') == '°F' else 16) %}{{ 'disabled' if states('climate.foyer') in ['unknown','unavailable'] else 'red' if high else 'grey' }}",
+                      "tap_action": {
+                        "action": "none"
+                      },
+                      "hold_action": {
+                        "action": "none"
+                      },
+                      "double_tap_action": {
+                        "action": "none"
+                      }
+                    }
+                  ],
+                  "card_mod": {
+                    "style": {
+                      "mushroom-template-chip$": "mushroom-chip, span { --text-color: {% set dp=state_attr('climate.foyer','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.foyer','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.foyer') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }}; color: {% set dp=state_attr('climate.foyer','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.foyer','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.foyer') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }} !important; }",
+                      ".": ":host { padding: 0 16px 12px; }"
+                    }
+                  }
+                }
+              ],
+              "grid_options": {
+                "columns": 12
+              },
+              "card_mod": {
+                "style": "{% set s=states('climate.foyer') %}{% set a=state_attr('climate.foyer','hvac_action') %}\nha-card {\n border-radius: 22px;\n min-height: 150px;\n padding: 0;\n {% if s in ['unknown','unavailable'] %}\n background: rgba(120,130,140,0.035);\n border: 1px dashed rgba(120,130,140,0.28);\n {% elif s=='off' %}\n background: rgba(120,130,140,0.055);\n border: 1px solid rgba(120,130,140,0.14);\n {% elif a=='heating' %}\n background: rgba(245,158,11,0.13);\n border: 1px solid rgba(245,158,11,0.42);\n {% elif a=='cooling' %}\n background: rgba(59,130,246,0.13);\n border: 1px solid rgba(59,130,246,0.42);\n {% else %}\n background: var(--ha-card-background, var(--card-background-color));\n border: 1px solid var(--divider-color);\n {% endif %}\n}\n\nha-card { --card-primary-font-size: 17px; --card-secondary-font-size: 14px; }\n"
+              }
+            },
+            {
+              "type": "custom:stack-in-card",
+              "mode": "vertical",
+              "cards": [
+                {
+                  "type": "custom:mushroom-template-card",
+                  "entity": "climate.guest_bedroom",
+                  "primary": "Guest Bedroom",
+                  "secondary": "{% set s=states(entity) %}{% set t=state_attr(entity,'current_temperature') %}{% set target=state_attr(entity,'temperature') %}{% set rh=state_attr(entity,'humidity') %}{{ t|round(1) if t is number else '—' }}°F{% if s not in ['off','unknown','unavailable'] %}  →  {{ target|round(1) if target is number else '—' }}°F{% endif %}\n{% set s = states(entity) %}{% set a = state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}Unavailable{% elif s == 'off' %}Off{% elif a == 'heating' %}Heating{% elif a == 'cooling' %}Cooling{% else %}Idle{% endif %}{% if s not in ['off','unknown','unavailable'] %}\n{% if state_attr(entity,'target_source') == 'override' %}Temporary override{% elif state_attr(entity,'target_source') == 'schedule' %}{{ state_attr(entity,'schedule_name') or 'Schedule' }}{% else %}Room default{% endif %}{% endif %}",
+                  "multiline_secondary": true,
+                  "icon": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}mdi:cloud-off-outline{% elif s=='off' %}mdi:power{% elif a=='heating' %}mdi:radiator{% elif a=='cooling' %}mdi:snowflake{% else %}mdi:thermometer{% endif %}",
+                  "icon_color": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['off','unknown','unavailable'] %}disabled{% elif a=='heating' %}orange{% elif a=='cooling' %}blue{% else %}grey{% endif %}",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "hold_action": {
+                    "action": "none"
+                  },
+                  "double_tap_action": {
+                    "action": "none"
+                  },
+                  "card_mod": {
+                    "style": "ha-card { border: none !important; background: transparent !important; box-shadow: none !important; min-height: 105px; border-radius: 0; padding-bottom: 0; }"
+                  }
+                },
+                {
+                  "type": "custom:mushroom-chips-card",
+                  "alignment": "end",
+                  "chips": [
+                    {
+                      "type": "template",
+                      "icon": "mdi:water-percent",
+                      "content": "{% set dp=state_attr('climate.guest_bedroom','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.guest_bedroom','default_temperature_unit') == '°F' else 16) %}{% set rh=state_attr('climate.guest_bedroom','humidity') %}{% if states('climate.guest_bedroom') in ['unknown','unavailable'] or rh is not number %}Humidity unavailable{% else %}{{ rh|round(1) }}% RH{% if high %} · High{% endif %}{% endif %}",
+                      "icon_color": "{% set dp=state_attr('climate.guest_bedroom','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.guest_bedroom','default_temperature_unit') == '°F' else 16) %}{{ 'disabled' if states('climate.guest_bedroom') in ['unknown','unavailable'] else 'red' if high else 'grey' }}",
+                      "tap_action": {
+                        "action": "none"
+                      },
+                      "hold_action": {
+                        "action": "none"
+                      },
+                      "double_tap_action": {
+                        "action": "none"
+                      }
+                    }
+                  ],
+                  "card_mod": {
+                    "style": {
+                      "mushroom-template-chip$": "mushroom-chip, span { --text-color: {% set dp=state_attr('climate.guest_bedroom','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.guest_bedroom','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.guest_bedroom') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }}; color: {% set dp=state_attr('climate.guest_bedroom','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.guest_bedroom','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.guest_bedroom') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }} !important; }",
+                      ".": ":host { padding: 0 16px 12px; }"
+                    }
+                  }
+                }
+              ],
+              "grid_options": {
+                "columns": 12
+              },
+              "card_mod": {
+                "style": "{% set s=states('climate.guest_bedroom') %}{% set a=state_attr('climate.guest_bedroom','hvac_action') %}\nha-card {\n border-radius: 22px;\n min-height: 150px;\n padding: 0;\n {% if s in ['unknown','unavailable'] %}\n background: rgba(120,130,140,0.035);\n border: 1px dashed rgba(120,130,140,0.28);\n {% elif s=='off' %}\n background: rgba(120,130,140,0.055);\n border: 1px solid rgba(120,130,140,0.14);\n {% elif a=='heating' %}\n background: rgba(245,158,11,0.13);\n border: 1px solid rgba(245,158,11,0.42);\n {% elif a=='cooling' %}\n background: rgba(59,130,246,0.13);\n border: 1px solid rgba(59,130,246,0.42);\n {% else %}\n background: var(--ha-card-background, var(--card-background-color));\n border: 1px solid var(--divider-color);\n {% endif %}\n}\n\nha-card { --card-primary-font-size: 17px; --card-secondary-font-size: 14px; }\n"
+              }
+            },
+            {
+              "type": "custom:stack-in-card",
+              "mode": "vertical",
+              "cards": [
+                {
+                  "type": "custom:mushroom-template-card",
+                  "entity": "climate.breakfast_kitchen",
+                  "primary": "Breakfast/Kitchen",
+                  "secondary": "{% set s=states(entity) %}{% set t=state_attr(entity,'current_temperature') %}{% set target=state_attr(entity,'temperature') %}{% set rh=state_attr(entity,'humidity') %}{{ t|round(1) if t is number else '—' }}°F{% if s not in ['off','unknown','unavailable'] %}  →  {{ target|round(1) if target is number else '—' }}°F{% endif %}\n{% set s = states(entity) %}{% set a = state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}Unavailable{% elif s == 'off' %}Off{% elif a == 'heating' %}Heating{% elif a == 'cooling' %}Cooling{% else %}Idle{% endif %}{% if s not in ['off','unknown','unavailable'] %}\n{% if state_attr(entity,'target_source') == 'override' %}Temporary override{% elif state_attr(entity,'target_source') == 'schedule' %}{{ state_attr(entity,'schedule_name') or 'Schedule' }}{% else %}Room default{% endif %}{% endif %}",
+                  "multiline_secondary": true,
+                  "icon": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}mdi:cloud-off-outline{% elif s=='off' %}mdi:power{% elif a=='heating' %}mdi:radiator{% elif a=='cooling' %}mdi:snowflake{% else %}mdi:thermometer{% endif %}",
+                  "icon_color": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['off','unknown','unavailable'] %}disabled{% elif a=='heating' %}orange{% elif a=='cooling' %}blue{% else %}grey{% endif %}",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "hold_action": {
+                    "action": "none"
+                  },
+                  "double_tap_action": {
+                    "action": "none"
+                  },
+                  "card_mod": {
+                    "style": "ha-card { border: none !important; background: transparent !important; box-shadow: none !important; min-height: 105px; border-radius: 0; padding-bottom: 0; }"
+                  }
+                },
+                {
+                  "type": "custom:mushroom-chips-card",
+                  "alignment": "end",
+                  "chips": [
+                    {
+                      "type": "template",
+                      "icon": "mdi:water-percent",
+                      "content": "{% set dp=state_attr('climate.breakfast_kitchen','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.breakfast_kitchen','default_temperature_unit') == '°F' else 16) %}{% set rh=state_attr('climate.breakfast_kitchen','humidity') %}{% if states('climate.breakfast_kitchen') in ['unknown','unavailable'] or rh is not number %}Humidity unavailable{% else %}{{ rh|round(1) }}% RH{% if high %} · High{% endif %}{% endif %}",
+                      "icon_color": "{% set dp=state_attr('climate.breakfast_kitchen','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.breakfast_kitchen','default_temperature_unit') == '°F' else 16) %}{{ 'disabled' if states('climate.breakfast_kitchen') in ['unknown','unavailable'] else 'red' if high else 'grey' }}",
+                      "tap_action": {
+                        "action": "none"
+                      },
+                      "hold_action": {
+                        "action": "none"
+                      },
+                      "double_tap_action": {
+                        "action": "none"
+                      }
+                    }
+                  ],
+                  "card_mod": {
+                    "style": {
+                      "mushroom-template-chip$": "mushroom-chip, span { --text-color: {% set dp=state_attr('climate.breakfast_kitchen','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.breakfast_kitchen','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.breakfast_kitchen') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }}; color: {% set dp=state_attr('climate.breakfast_kitchen','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.breakfast_kitchen','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.breakfast_kitchen') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }} !important; }",
+                      ".": ":host { padding: 0 16px 12px; }"
+                    }
+                  }
+                }
+              ],
+              "grid_options": {
+                "columns": 12
+              },
+              "card_mod": {
+                "style": "{% set s=states('climate.breakfast_kitchen') %}{% set a=state_attr('climate.breakfast_kitchen','hvac_action') %}\nha-card {\n border-radius: 22px;\n min-height: 150px;\n padding: 0;\n {% if s in ['unknown','unavailable'] %}\n background: rgba(120,130,140,0.035);\n border: 1px dashed rgba(120,130,140,0.28);\n {% elif s=='off' %}\n background: rgba(120,130,140,0.055);\n border: 1px solid rgba(120,130,140,0.14);\n {% elif a=='heating' %}\n background: rgba(245,158,11,0.13);\n border: 1px solid rgba(245,158,11,0.42);\n {% elif a=='cooling' %}\n background: rgba(59,130,246,0.13);\n border: 1px solid rgba(59,130,246,0.42);\n {% else %}\n background: var(--ha-card-background, var(--card-background-color));\n border: 1px solid var(--divider-color);\n {% endif %}\n}\n\nha-card { --card-primary-font-size: 17px; --card-secondary-font-size: 14px; }\n"
+              }
+            },
+            {
+              "type": "custom:stack-in-card",
+              "mode": "vertical",
+              "cards": [
+                {
+                  "type": "custom:mushroom-template-card",
+                  "entity": "climate.great_room",
+                  "primary": "Great Room",
+                  "secondary": "{% set s=states(entity) %}{% set t=state_attr(entity,'current_temperature') %}{% set target=state_attr(entity,'temperature') %}{% set rh=state_attr(entity,'humidity') %}{{ t|round(1) if t is number else '—' }}°F{% if s not in ['off','unknown','unavailable'] %}  →  {{ target|round(1) if target is number else '—' }}°F{% endif %}\n{% set s = states(entity) %}{% set a = state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}Unavailable{% elif s == 'off' %}Off{% elif a == 'heating' %}Heating{% elif a == 'cooling' %}Cooling{% else %}Idle{% endif %}{% if s not in ['off','unknown','unavailable'] %}\n{% if state_attr(entity,'target_source') == 'override' %}Temporary override{% elif state_attr(entity,'target_source') == 'schedule' %}{{ state_attr(entity,'schedule_name') or 'Schedule' }}{% else %}Room default{% endif %}{% endif %}",
+                  "multiline_secondary": true,
+                  "icon": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}mdi:cloud-off-outline{% elif s=='off' %}mdi:power{% elif a=='heating' %}mdi:radiator{% elif a=='cooling' %}mdi:snowflake{% else %}mdi:thermometer{% endif %}",
+                  "icon_color": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['off','unknown','unavailable'] %}disabled{% elif a=='heating' %}orange{% elif a=='cooling' %}blue{% else %}grey{% endif %}",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "hold_action": {
+                    "action": "none"
+                  },
+                  "double_tap_action": {
+                    "action": "none"
+                  },
+                  "card_mod": {
+                    "style": "ha-card { border: none !important; background: transparent !important; box-shadow: none !important; min-height: 105px; border-radius: 0; padding-bottom: 0; }"
+                  }
+                },
+                {
+                  "type": "custom:mushroom-chips-card",
+                  "alignment": "end",
+                  "chips": [
+                    {
+                      "type": "template",
+                      "icon": "mdi:water-percent",
+                      "content": "{% set dp=state_attr('climate.great_room','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.great_room','default_temperature_unit') == '°F' else 16) %}{% set rh=state_attr('climate.great_room','humidity') %}{% if states('climate.great_room') in ['unknown','unavailable'] or rh is not number %}Humidity unavailable{% else %}{{ rh|round(1) }}% RH{% if high %} · High{% endif %}{% endif %}",
+                      "icon_color": "{% set dp=state_attr('climate.great_room','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.great_room','default_temperature_unit') == '°F' else 16) %}{{ 'disabled' if states('climate.great_room') in ['unknown','unavailable'] else 'red' if high else 'grey' }}",
+                      "tap_action": {
+                        "action": "none"
+                      },
+                      "hold_action": {
+                        "action": "none"
+                      },
+                      "double_tap_action": {
+                        "action": "none"
+                      }
+                    }
+                  ],
+                  "card_mod": {
+                    "style": {
+                      "mushroom-template-chip$": "mushroom-chip, span { --text-color: {% set dp=state_attr('climate.great_room','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.great_room','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.great_room') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }}; color: {% set dp=state_attr('climate.great_room','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.great_room','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.great_room') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }} !important; }",
+                      ".": ":host { padding: 0 16px 12px; }"
+                    }
+                  }
+                }
+              ],
+              "grid_options": {
+                "columns": 12
+              },
+              "card_mod": {
+                "style": "{% set s=states('climate.great_room') %}{% set a=state_attr('climate.great_room','hvac_action') %}\nha-card {\n border-radius: 22px;\n min-height: 150px;\n padding: 0;\n {% if s in ['unknown','unavailable'] %}\n background: rgba(120,130,140,0.035);\n border: 1px dashed rgba(120,130,140,0.28);\n {% elif s=='off' %}\n background: rgba(120,130,140,0.055);\n border: 1px solid rgba(120,130,140,0.14);\n {% elif a=='heating' %}\n background: rgba(245,158,11,0.13);\n border: 1px solid rgba(245,158,11,0.42);\n {% elif a=='cooling' %}\n background: rgba(59,130,246,0.13);\n border: 1px solid rgba(59,130,246,0.42);\n {% else %}\n background: var(--ha-card-background, var(--card-background-color));\n border: 1px solid var(--divider-color);\n {% endif %}\n}\n\nha-card { --card-primary-font-size: 17px; --card-secondary-font-size: 14px; }\n"
+              }
+            },
+            {
+              "type": "custom:stack-in-card",
+              "mode": "vertical",
+              "cards": [
+                {
+                  "type": "custom:mushroom-template-card",
+                  "entity": "climate.dining_room",
+                  "primary": "Dining Room",
+                  "secondary": "{% set s=states(entity) %}{% set t=state_attr(entity,'current_temperature') %}{% set target=state_attr(entity,'temperature') %}{% set rh=state_attr(entity,'humidity') %}{{ t|round(1) if t is number else '—' }}°F{% if s not in ['off','unknown','unavailable'] %}  →  {{ target|round(1) if target is number else '—' }}°F{% endif %}\n{% set s = states(entity) %}{% set a = state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}Unavailable{% elif s == 'off' %}Off{% elif a == 'heating' %}Heating{% elif a == 'cooling' %}Cooling{% else %}Idle{% endif %}{% if s not in ['off','unknown','unavailable'] %}\n{% if state_attr(entity,'target_source') == 'override' %}Temporary override{% elif state_attr(entity,'target_source') == 'schedule' %}{{ state_attr(entity,'schedule_name') or 'Schedule' }}{% else %}Room default{% endif %}{% endif %}",
+                  "multiline_secondary": true,
+                  "icon": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}mdi:cloud-off-outline{% elif s=='off' %}mdi:power{% elif a=='heating' %}mdi:radiator{% elif a=='cooling' %}mdi:snowflake{% else %}mdi:thermometer{% endif %}",
+                  "icon_color": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['off','unknown','unavailable'] %}disabled{% elif a=='heating' %}orange{% elif a=='cooling' %}blue{% else %}grey{% endif %}",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "hold_action": {
+                    "action": "none"
+                  },
+                  "double_tap_action": {
+                    "action": "none"
+                  },
+                  "card_mod": {
+                    "style": "ha-card { border: none !important; background: transparent !important; box-shadow: none !important; min-height: 105px; border-radius: 0; padding-bottom: 0; }"
+                  }
+                },
+                {
+                  "type": "custom:mushroom-chips-card",
+                  "alignment": "end",
+                  "chips": [
+                    {
+                      "type": "template",
+                      "icon": "mdi:water-percent",
+                      "content": "{% set dp=state_attr('climate.dining_room','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.dining_room','default_temperature_unit') == '°F' else 16) %}{% set rh=state_attr('climate.dining_room','humidity') %}{% if states('climate.dining_room') in ['unknown','unavailable'] or rh is not number %}Humidity unavailable{% else %}{{ rh|round(1) }}% RH{% if high %} · High{% endif %}{% endif %}",
+                      "icon_color": "{% set dp=state_attr('climate.dining_room','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.dining_room','default_temperature_unit') == '°F' else 16) %}{{ 'disabled' if states('climate.dining_room') in ['unknown','unavailable'] else 'red' if high else 'grey' }}",
+                      "tap_action": {
+                        "action": "none"
+                      },
+                      "hold_action": {
+                        "action": "none"
+                      },
+                      "double_tap_action": {
+                        "action": "none"
+                      }
+                    }
+                  ],
+                  "card_mod": {
+                    "style": {
+                      "mushroom-template-chip$": "mushroom-chip, span { --text-color: {% set dp=state_attr('climate.dining_room','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.dining_room','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.dining_room') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }}; color: {% set dp=state_attr('climate.dining_room','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.dining_room','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.dining_room') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }} !important; }",
+                      ".": ":host { padding: 0 16px 12px; }"
+                    }
+                  }
+                }
+              ],
+              "grid_options": {
+                "columns": 12
+              },
+              "card_mod": {
+                "style": "{% set s=states('climate.dining_room') %}{% set a=state_attr('climate.dining_room','hvac_action') %}\nha-card {\n border-radius: 22px;\n min-height: 150px;\n padding: 0;\n {% if s in ['unknown','unavailable'] %}\n background: rgba(120,130,140,0.035);\n border: 1px dashed rgba(120,130,140,0.28);\n {% elif s=='off' %}\n background: rgba(120,130,140,0.055);\n border: 1px solid rgba(120,130,140,0.14);\n {% elif a=='heating' %}\n background: rgba(245,158,11,0.13);\n border: 1px solid rgba(245,158,11,0.42);\n {% elif a=='cooling' %}\n background: rgba(59,130,246,0.13);\n border: 1px solid rgba(59,130,246,0.42);\n {% else %}\n background: var(--ha-card-background, var(--card-background-color));\n border: 1px solid var(--divider-color);\n {% endif %}\n}\n\nha-card { --card-primary-font-size: 17px; --card-secondary-font-size: 14px; }\n"
+              }
+            },
+            {
+              "type": "custom:stack-in-card",
+              "mode": "vertical",
+              "cards": [
+                {
+                  "type": "custom:mushroom-template-card",
+                  "entity": "climate.office",
+                  "primary": "Office",
+                  "secondary": "{% set s=states(entity) %}{% set t=state_attr(entity,'current_temperature') %}{% set target=state_attr(entity,'temperature') %}{% set rh=state_attr(entity,'humidity') %}{{ t|round(1) if t is number else '—' }}°F{% if s not in ['off','unknown','unavailable'] %}  →  {{ target|round(1) if target is number else '—' }}°F{% endif %}\n{% set s = states(entity) %}{% set a = state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}Unavailable{% elif s == 'off' %}Off{% elif a == 'heating' %}Heating{% elif a == 'cooling' %}Cooling{% else %}Idle{% endif %}{% if s not in ['off','unknown','unavailable'] %}\n{% if state_attr(entity,'target_source') == 'override' %}Temporary override{% elif state_attr(entity,'target_source') == 'schedule' %}{{ state_attr(entity,'schedule_name') or 'Schedule' }}{% else %}Room default{% endif %}{% endif %}",
+                  "multiline_secondary": true,
+                  "icon": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}mdi:cloud-off-outline{% elif s=='off' %}mdi:power{% elif a=='heating' %}mdi:radiator{% elif a=='cooling' %}mdi:snowflake{% else %}mdi:thermometer{% endif %}",
+                  "icon_color": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['off','unknown','unavailable'] %}disabled{% elif a=='heating' %}orange{% elif a=='cooling' %}blue{% else %}grey{% endif %}",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "hold_action": {
+                    "action": "none"
+                  },
+                  "double_tap_action": {
+                    "action": "none"
+                  },
+                  "card_mod": {
+                    "style": "ha-card { border: none !important; background: transparent !important; box-shadow: none !important; min-height: 105px; border-radius: 0; padding-bottom: 0; }"
+                  }
+                },
+                {
+                  "type": "custom:mushroom-chips-card",
+                  "alignment": "end",
+                  "chips": [
+                    {
+                      "type": "template",
+                      "icon": "mdi:water-percent",
+                      "content": "{% set dp=state_attr('climate.office','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.office','default_temperature_unit') == '°F' else 16) %}{% set rh=state_attr('climate.office','humidity') %}{% if states('climate.office') in ['unknown','unavailable'] or rh is not number %}Humidity unavailable{% else %}{{ rh|round(1) }}% RH{% if high %} · High{% endif %}{% endif %}",
+                      "icon_color": "{% set dp=state_attr('climate.office','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.office','default_temperature_unit') == '°F' else 16) %}{{ 'disabled' if states('climate.office') in ['unknown','unavailable'] else 'red' if high else 'grey' }}",
+                      "tap_action": {
+                        "action": "none"
+                      },
+                      "hold_action": {
+                        "action": "none"
+                      },
+                      "double_tap_action": {
+                        "action": "none"
+                      }
+                    }
+                  ],
+                  "card_mod": {
+                    "style": {
+                      "mushroom-template-chip$": "mushroom-chip, span { --text-color: {% set dp=state_attr('climate.office','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.office','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.office') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }}; color: {% set dp=state_attr('climate.office','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.office','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.office') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }} !important; }",
+                      ".": ":host { padding: 0 16px 12px; }"
+                    }
+                  }
+                }
+              ],
+              "grid_options": {
+                "columns": 12
+              },
+              "card_mod": {
+                "style": "{% set s=states('climate.office') %}{% set a=state_attr('climate.office','hvac_action') %}\nha-card {\n border-radius: 22px;\n min-height: 150px;\n padding: 0;\n {% if s in ['unknown','unavailable'] %}\n background: rgba(120,130,140,0.035);\n border: 1px dashed rgba(120,130,140,0.28);\n {% elif s=='off' %}\n background: rgba(120,130,140,0.055);\n border: 1px solid rgba(120,130,140,0.14);\n {% elif a=='heating' %}\n background: rgba(245,158,11,0.13);\n border: 1px solid rgba(245,158,11,0.42);\n {% elif a=='cooling' %}\n background: rgba(59,130,246,0.13);\n border: 1px solid rgba(59,130,246,0.42);\n {% else %}\n background: var(--ha-card-background, var(--card-background-color));\n border: 1px solid var(--divider-color);\n {% endif %}\n}\n\nha-card { --card-primary-font-size: 17px; --card-secondary-font-size: 14px; }\n"
+              }
+            }
+          ],
+          "column_span": 2
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Floor 2 · off for leak",
+              "icon": "mdi:water-alert",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "content": "**Keep these zones off until the leak is repaired.** Display only; no room controls.",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "custom:stack-in-card",
+              "mode": "vertical",
+              "cards": [
+                {
+                  "type": "custom:mushroom-template-card",
+                  "entity": "climate.lounge_study",
+                  "primary": "Lounge/Study",
+                  "secondary": "{% set s=states(entity) %}{% set t=state_attr(entity,'current_temperature') %}{% set target=state_attr(entity,'temperature') %}{% set rh=state_attr(entity,'humidity') %}{{ t|round(1) if t is number else '—' }}°F{% if s not in ['off','unknown','unavailable'] %}  →  {{ target|round(1) if target is number else '—' }}°F{% endif %}\n{% set s = states(entity) %}{% set a = state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}Unavailable{% elif s == 'off' %}Off{% elif a == 'heating' %}Heating{% elif a == 'cooling' %}Cooling{% else %}Idle{% endif %} · Leak — keep off",
+                  "multiline_secondary": true,
+                  "icon": "mdi:water-alert",
+                  "icon_color": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['off','unknown','unavailable'] %}disabled{% elif a=='heating' %}orange{% elif a=='cooling' %}blue{% else %}grey{% endif %}",
+                  "tap_action": {
+                    "action": "none"
+                  },
+                  "hold_action": {
+                    "action": "none"
+                  },
+                  "double_tap_action": {
+                    "action": "none"
+                  },
+                  "card_mod": {
+                    "style": "ha-card { border: none !important; background: transparent !important; box-shadow: none !important; min-height: 105px; border-radius: 0; padding-bottom: 0; }"
+                  }
+                },
+                {
+                  "type": "custom:mushroom-chips-card",
+                  "alignment": "end",
+                  "chips": [
+                    {
+                      "type": "template",
+                      "icon": "mdi:water-percent",
+                      "content": "{% set dp=state_attr('climate.lounge_study','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.lounge_study','default_temperature_unit') == '°F' else 16) %}{% set rh=state_attr('climate.lounge_study','humidity') %}{% if states('climate.lounge_study') in ['unknown','unavailable'] or rh is not number %}Humidity unavailable{% else %}{{ rh|round(1) }}% RH{% if high %} · High{% endif %}{% endif %}",
+                      "icon_color": "{% set dp=state_attr('climate.lounge_study','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.lounge_study','default_temperature_unit') == '°F' else 16) %}{{ 'disabled' if states('climate.lounge_study') in ['unknown','unavailable'] else 'red' if high else 'grey' }}",
+                      "tap_action": {
+                        "action": "none"
+                      },
+                      "hold_action": {
+                        "action": "none"
+                      },
+                      "double_tap_action": {
+                        "action": "none"
+                      }
+                    }
+                  ],
+                  "card_mod": {
+                    "style": {
+                      "mushroom-template-chip$": "mushroom-chip, span { --text-color: {% set dp=state_attr('climate.lounge_study','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.lounge_study','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.lounge_study') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }}; color: {% set dp=state_attr('climate.lounge_study','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.lounge_study','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.lounge_study') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }} !important; }",
+                      ".": ":host { padding: 0 16px 12px; }"
+                    }
+                  }
+                }
+              ],
+              "grid_options": {
+                "columns": 12
+              },
+              "card_mod": {
+                "style": "{% set s=states('climate.lounge_study') %}{% set a=state_attr('climate.lounge_study','hvac_action') %}\nha-card {\n border-radius: 22px;\n min-height: 150px;\n padding: 0;\n {% if s in ['unknown','unavailable'] %}\n background: rgba(120,130,140,0.035);\n border: 1px dashed rgba(120,130,140,0.28);\n {% elif s=='off' %}\n background: rgba(120,130,140,0.055);\n border: 1px solid rgba(120,130,140,0.14);\n {% elif a=='heating' %}\n background: rgba(245,158,11,0.13);\n border: 1px solid rgba(245,158,11,0.42);\n {% elif a=='cooling' %}\n background: rgba(59,130,246,0.13);\n border: 1px solid rgba(59,130,246,0.42);\n {% else %}\n background: var(--ha-card-background, var(--card-background-color));\n border: 1px solid var(--divider-color);\n {% endif %}\n}\n\nha-card { --card-primary-font-size: 17px; --card-secondary-font-size: 14px; }\n"
+              }
+            },
+            {
+              "type": "custom:stack-in-card",
+              "mode": "vertical",
+              "cards": [
+                {
+                  "type": "custom:mushroom-template-card",
+                  "entity": "climate.master_bedroom",
+                  "primary": "Master Bedroom",
+                  "secondary": "{% set s=states(entity) %}{% set t=state_attr(entity,'current_temperature') %}{% set target=state_attr(entity,'temperature') %}{% set rh=state_attr(entity,'humidity') %}{{ t|round(1) if t is number else '—' }}°F{% if s not in ['off','unknown','unavailable'] %}  →  {{ target|round(1) if target is number else '—' }}°F{% endif %}\n{% set s = states(entity) %}{% set a = state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}Unavailable{% elif s == 'off' %}Off{% elif a == 'heating' %}Heating{% elif a == 'cooling' %}Cooling{% else %}Idle{% endif %} · Leak — keep off",
+                  "multiline_secondary": true,
+                  "icon": "mdi:water-alert",
+                  "icon_color": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['off','unknown','unavailable'] %}disabled{% elif a=='heating' %}orange{% elif a=='cooling' %}blue{% else %}grey{% endif %}",
+                  "tap_action": {
+                    "action": "none"
+                  },
+                  "hold_action": {
+                    "action": "none"
+                  },
+                  "double_tap_action": {
+                    "action": "none"
+                  },
+                  "card_mod": {
+                    "style": "ha-card { border: none !important; background: transparent !important; box-shadow: none !important; min-height: 105px; border-radius: 0; padding-bottom: 0; }"
+                  }
+                },
+                {
+                  "type": "custom:mushroom-chips-card",
+                  "alignment": "end",
+                  "chips": [
+                    {
+                      "type": "template",
+                      "icon": "mdi:water-percent",
+                      "content": "{% set dp=state_attr('climate.master_bedroom','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.master_bedroom','default_temperature_unit') == '°F' else 16) %}{% set rh=state_attr('climate.master_bedroom','humidity') %}{% if states('climate.master_bedroom') in ['unknown','unavailable'] or rh is not number %}Humidity unavailable{% else %}{{ rh|round(1) }}% RH{% if high %} · High{% endif %}{% endif %}",
+                      "icon_color": "{% set dp=state_attr('climate.master_bedroom','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.master_bedroom','default_temperature_unit') == '°F' else 16) %}{{ 'disabled' if states('climate.master_bedroom') in ['unknown','unavailable'] else 'red' if high else 'grey' }}",
+                      "tap_action": {
+                        "action": "none"
+                      },
+                      "hold_action": {
+                        "action": "none"
+                      },
+                      "double_tap_action": {
+                        "action": "none"
+                      }
+                    }
+                  ],
+                  "card_mod": {
+                    "style": {
+                      "mushroom-template-chip$": "mushroom-chip, span { --text-color: {% set dp=state_attr('climate.master_bedroom','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.master_bedroom','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.master_bedroom') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }}; color: {% set dp=state_attr('climate.master_bedroom','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.master_bedroom','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.master_bedroom') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }} !important; }",
+                      ".": ":host { padding: 0 16px 12px; }"
+                    }
+                  }
+                }
+              ],
+              "grid_options": {
+                "columns": 12
+              },
+              "card_mod": {
+                "style": "{% set s=states('climate.master_bedroom') %}{% set a=state_attr('climate.master_bedroom','hvac_action') %}\nha-card {\n border-radius: 22px;\n min-height: 150px;\n padding: 0;\n {% if s in ['unknown','unavailable'] %}\n background: rgba(120,130,140,0.035);\n border: 1px dashed rgba(120,130,140,0.28);\n {% elif s=='off' %}\n background: rgba(120,130,140,0.055);\n border: 1px solid rgba(120,130,140,0.14);\n {% elif a=='heating' %}\n background: rgba(245,158,11,0.13);\n border: 1px solid rgba(245,158,11,0.42);\n {% elif a=='cooling' %}\n background: rgba(59,130,246,0.13);\n border: 1px solid rgba(59,130,246,0.42);\n {% else %}\n background: var(--ha-card-background, var(--card-background-color));\n border: 1px solid var(--divider-color);\n {% endif %}\n}\n\nha-card { --card-primary-font-size: 17px; --card-secondary-font-size: 14px; }\n"
+              }
+            },
+            {
+              "type": "custom:stack-in-card",
+              "mode": "vertical",
+              "cards": [
+                {
+                  "type": "custom:mushroom-template-card",
+                  "entity": "climate.retreat",
+                  "primary": "Retreat",
+                  "secondary": "{% set s=states(entity) %}{% set t=state_attr(entity,'current_temperature') %}{% set target=state_attr(entity,'temperature') %}{% set rh=state_attr(entity,'humidity') %}{{ t|round(1) if t is number else '—' }}°F{% if s not in ['off','unknown','unavailable'] %}  →  {{ target|round(1) if target is number else '—' }}°F{% endif %}\n{% set s = states(entity) %}{% set a = state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}Unavailable{% elif s == 'off' %}Off{% elif a == 'heating' %}Heating{% elif a == 'cooling' %}Cooling{% else %}Idle{% endif %} · Leak — keep off",
+                  "multiline_secondary": true,
+                  "icon": "mdi:water-alert",
+                  "icon_color": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['off','unknown','unavailable'] %}disabled{% elif a=='heating' %}orange{% elif a=='cooling' %}blue{% else %}grey{% endif %}",
+                  "tap_action": {
+                    "action": "none"
+                  },
+                  "hold_action": {
+                    "action": "none"
+                  },
+                  "double_tap_action": {
+                    "action": "none"
+                  },
+                  "card_mod": {
+                    "style": "ha-card { border: none !important; background: transparent !important; box-shadow: none !important; min-height: 105px; border-radius: 0; padding-bottom: 0; }"
+                  }
+                },
+                {
+                  "type": "custom:mushroom-chips-card",
+                  "alignment": "end",
+                  "chips": [
+                    {
+                      "type": "template",
+                      "icon": "mdi:water-percent",
+                      "content": "{% set dp=state_attr('climate.retreat','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.retreat','default_temperature_unit') == '°F' else 16) %}{% set rh=state_attr('climate.retreat','humidity') %}{% if states('climate.retreat') in ['unknown','unavailable'] or rh is not number %}Humidity unavailable{% else %}{{ rh|round(1) }}% RH{% if high %} · High{% endif %}{% endif %}",
+                      "icon_color": "{% set dp=state_attr('climate.retreat','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.retreat','default_temperature_unit') == '°F' else 16) %}{{ 'disabled' if states('climate.retreat') in ['unknown','unavailable'] else 'red' if high else 'grey' }}",
+                      "tap_action": {
+                        "action": "none"
+                      },
+                      "hold_action": {
+                        "action": "none"
+                      },
+                      "double_tap_action": {
+                        "action": "none"
+                      }
+                    }
+                  ],
+                  "card_mod": {
+                    "style": {
+                      "mushroom-template-chip$": "mushroom-chip, span { --text-color: {% set dp=state_attr('climate.retreat','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.retreat','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.retreat') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }}; color: {% set dp=state_attr('climate.retreat','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.retreat','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.retreat') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }} !important; }",
+                      ".": ":host { padding: 0 16px 12px; }"
+                    }
+                  }
+                }
+              ],
+              "grid_options": {
+                "columns": 12
+              },
+              "card_mod": {
+                "style": "{% set s=states('climate.retreat') %}{% set a=state_attr('climate.retreat','hvac_action') %}\nha-card {\n border-radius: 22px;\n min-height: 150px;\n padding: 0;\n {% if s in ['unknown','unavailable'] %}\n background: rgba(120,130,140,0.035);\n border: 1px dashed rgba(120,130,140,0.28);\n {% elif s=='off' %}\n background: rgba(120,130,140,0.055);\n border: 1px solid rgba(120,130,140,0.14);\n {% elif a=='heating' %}\n background: rgba(245,158,11,0.13);\n border: 1px solid rgba(245,158,11,0.42);\n {% elif a=='cooling' %}\n background: rgba(59,130,246,0.13);\n border: 1px solid rgba(59,130,246,0.42);\n {% else %}\n background: var(--ha-card-background, var(--card-background-color));\n border: 1px solid var(--divider-color);\n {% endif %}\n}\n\nha-card { --card-primary-font-size: 17px; --card-secondary-font-size: 14px; }\n"
+              }
+            },
+            {
+              "type": "custom:stack-in-card",
+              "mode": "vertical",
+              "cards": [
+                {
+                  "type": "custom:mushroom-template-card",
+                  "entity": "climate.bedroom_2_3",
+                  "primary": "Bedroom 2 & 3",
+                  "secondary": "{% set s=states(entity) %}{% set t=state_attr(entity,'current_temperature') %}{% set target=state_attr(entity,'temperature') %}{% set rh=state_attr(entity,'humidity') %}{{ t|round(1) if t is number else '—' }}°F{% if s not in ['off','unknown','unavailable'] %}  →  {{ target|round(1) if target is number else '—' }}°F{% endif %}\n{% set s = states(entity) %}{% set a = state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}Unavailable{% elif s == 'off' %}Off{% elif a == 'heating' %}Heating{% elif a == 'cooling' %}Cooling{% else %}Idle{% endif %} · Leak — keep off",
+                  "multiline_secondary": true,
+                  "icon": "mdi:water-alert",
+                  "icon_color": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['off','unknown','unavailable'] %}disabled{% elif a=='heating' %}orange{% elif a=='cooling' %}blue{% else %}grey{% endif %}",
+                  "tap_action": {
+                    "action": "none"
+                  },
+                  "hold_action": {
+                    "action": "none"
+                  },
+                  "double_tap_action": {
+                    "action": "none"
+                  },
+                  "card_mod": {
+                    "style": "ha-card { border: none !important; background: transparent !important; box-shadow: none !important; min-height: 105px; border-radius: 0; padding-bottom: 0; }"
+                  }
+                },
+                {
+                  "type": "custom:mushroom-chips-card",
+                  "alignment": "end",
+                  "chips": [
+                    {
+                      "type": "template",
+                      "icon": "mdi:water-percent",
+                      "content": "{% set dp=state_attr('climate.bedroom_2_3','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.bedroom_2_3','default_temperature_unit') == '°F' else 16) %}{% set rh=state_attr('climate.bedroom_2_3','humidity') %}{% if states('climate.bedroom_2_3') in ['unknown','unavailable'] or rh is not number %}Humidity unavailable{% else %}{{ rh|round(1) }}% RH{% if high %} · High{% endif %}{% endif %}",
+                      "icon_color": "{% set dp=state_attr('climate.bedroom_2_3','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.bedroom_2_3','default_temperature_unit') == '°F' else 16) %}{{ 'disabled' if states('climate.bedroom_2_3') in ['unknown','unavailable'] else 'red' if high else 'grey' }}",
+                      "tap_action": {
+                        "action": "none"
+                      },
+                      "hold_action": {
+                        "action": "none"
+                      },
+                      "double_tap_action": {
+                        "action": "none"
+                      }
+                    }
+                  ],
+                  "card_mod": {
+                    "style": {
+                      "mushroom-template-chip$": "mushroom-chip, span { --text-color: {% set dp=state_attr('climate.bedroom_2_3','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.bedroom_2_3','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.bedroom_2_3') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }}; color: {% set dp=state_attr('climate.bedroom_2_3','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.bedroom_2_3','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.bedroom_2_3') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }} !important; }",
+                      ".": ":host { padding: 0 16px 12px; }"
+                    }
+                  }
+                }
+              ],
+              "grid_options": {
+                "columns": 12
+              },
+              "card_mod": {
+                "style": "{% set s=states('climate.bedroom_2_3') %}{% set a=state_attr('climate.bedroom_2_3','hvac_action') %}\nha-card {\n border-radius: 22px;\n min-height: 150px;\n padding: 0;\n {% if s in ['unknown','unavailable'] %}\n background: rgba(120,130,140,0.035);\n border: 1px dashed rgba(120,130,140,0.28);\n {% elif s=='off' %}\n background: rgba(120,130,140,0.055);\n border: 1px solid rgba(120,130,140,0.14);\n {% elif a=='heating' %}\n background: rgba(245,158,11,0.13);\n border: 1px solid rgba(245,158,11,0.42);\n {% elif a=='cooling' %}\n background: rgba(59,130,246,0.13);\n border: 1px solid rgba(59,130,246,0.42);\n {% else %}\n background: var(--ha-card-background, var(--card-background-color));\n border: 1px solid var(--divider-color);\n {% endif %}\n}\n\nha-card { --card-primary-font-size: 17px; --card-secondary-font-size: 14px; }\n"
+              }
+            },
+            {
+              "type": "custom:stack-in-card",
+              "mode": "vertical",
+              "cards": [
+                {
+                  "type": "custom:mushroom-template-card",
+                  "entity": "climate.bedroom_4",
+                  "primary": "Bedroom 4",
+                  "secondary": "{% set s=states(entity) %}{% set t=state_attr(entity,'current_temperature') %}{% set target=state_attr(entity,'temperature') %}{% set rh=state_attr(entity,'humidity') %}{{ t|round(1) if t is number else '—' }}°F{% if s not in ['off','unknown','unavailable'] %}  →  {{ target|round(1) if target is number else '—' }}°F{% endif %}\n{% set s = states(entity) %}{% set a = state_attr(entity,'hvac_action') %}{% if s in ['unknown','unavailable'] %}Unavailable{% elif s == 'off' %}Off{% elif a == 'heating' %}Heating{% elif a == 'cooling' %}Cooling{% else %}Idle{% endif %} · Leak — keep off",
+                  "multiline_secondary": true,
+                  "icon": "mdi:water-alert",
+                  "icon_color": "{% set s=states(entity) %}{% set a=state_attr(entity,'hvac_action') %}{% if s in ['off','unknown','unavailable'] %}disabled{% elif a=='heating' %}orange{% elif a=='cooling' %}blue{% else %}grey{% endif %}",
+                  "tap_action": {
+                    "action": "none"
+                  },
+                  "hold_action": {
+                    "action": "none"
+                  },
+                  "double_tap_action": {
+                    "action": "none"
+                  },
+                  "card_mod": {
+                    "style": "ha-card { border: none !important; background: transparent !important; box-shadow: none !important; min-height: 105px; border-radius: 0; padding-bottom: 0; }"
+                  }
+                },
+                {
+                  "type": "custom:mushroom-chips-card",
+                  "alignment": "end",
+                  "chips": [
+                    {
+                      "type": "template",
+                      "icon": "mdi:water-percent",
+                      "content": "{% set dp=state_attr('climate.bedroom_4','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.bedroom_4','default_temperature_unit') == '°F' else 16) %}{% set rh=state_attr('climate.bedroom_4','humidity') %}{% if states('climate.bedroom_4') in ['unknown','unavailable'] or rh is not number %}Humidity unavailable{% else %}{{ rh|round(1) }}% RH{% if high %} · High{% endif %}{% endif %}",
+                      "icon_color": "{% set dp=state_attr('climate.bedroom_4','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.bedroom_4','default_temperature_unit') == '°F' else 16) %}{{ 'disabled' if states('climate.bedroom_4') in ['unknown','unavailable'] else 'red' if high else 'grey' }}",
+                      "tap_action": {
+                        "action": "none"
+                      },
+                      "hold_action": {
+                        "action": "none"
+                      },
+                      "double_tap_action": {
+                        "action": "none"
+                      }
+                    }
+                  ],
+                  "card_mod": {
+                    "style": {
+                      "mushroom-template-chip$": "mushroom-chip, span { --text-color: {% set dp=state_attr('climate.bedroom_4','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.bedroom_4','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.bedroom_4') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }}; color: {% set dp=state_attr('climate.bedroom_4','dewpoint') %}{% set high=dp is number and dp >= (60 if state_attr('climate.bedroom_4','default_temperature_unit') == '°F' else 16) %}{{ 'var(--disabled-text-color)' if states('climate.bedroom_4') in ['unknown','unavailable'] else 'var(--error-color)' if high else 'var(--secondary-text-color)' }} !important; }",
+                      ".": ":host { padding: 0 16px 12px; }"
+                    }
+                  }
+                }
+              ],
+              "grid_options": {
+                "columns": 12
+              },
+              "card_mod": {
+                "style": "{% set s=states('climate.bedroom_4') %}{% set a=state_attr('climate.bedroom_4','hvac_action') %}\nha-card {\n border-radius: 22px;\n min-height: 150px;\n padding: 0;\n {% if s in ['unknown','unavailable'] %}\n background: rgba(120,130,140,0.035);\n border: 1px dashed rgba(120,130,140,0.28);\n {% elif s=='off' %}\n background: rgba(120,130,140,0.055);\n border: 1px solid rgba(120,130,140,0.14);\n {% elif a=='heating' %}\n background: rgba(245,158,11,0.13);\n border: 1px solid rgba(245,158,11,0.42);\n {% elif a=='cooling' %}\n background: rgba(59,130,246,0.13);\n border: 1px solid rgba(59,130,246,0.42);\n {% else %}\n background: var(--ha-card-background, var(--card-background-color));\n border: 1px solid var(--divider-color);\n {% endif %}\n}\n\nha-card { --card-primary-font-size: 17px; --card-secondary-font-size: 14px; }\n"
+              }
+            }
+          ],
+          "column_span": 2
+        }
+      ]
+    },
+    {
+      "title": "Defaults",
+      "path": "defaults",
+      "icon": "mdi:thermometer",
+      "type": "sections",
+      "max_columns": 2,
+      "sections": [
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Global default"
+            },
+            {
+              "type": "markdown",
+              "content": "Default temperatures apply when a temperature schedule or override is not supplying the target. Editing these controls keeps schedules enabled. **Copy global default** copies the current value once."
+            },
+            {
+              "type": "entities",
+              "show_header_toggle": false,
+              "entities": [
+                {
+                  "entity": "number.messana_all_rooms_default_temperature",
+                  "name": "All rooms default"
+                }
+              ]
+            },
+            {
+              "type": "markdown",
+              "content": "The global control changes stored defaults for all 12 rooms, including exceptions. It does not enable rooms. **Floor 2 must remain off because of the leak.** Upstairs controls are omitted from this dashboard."
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Room defaults"
+            },
+            {
+              "type": "entities",
+              "title": "Basement",
+              "show_header_toggle": false,
+              "entities": [
+                {
+                  "entity": "number.basement_default_temperature",
+                  "name": "Default temperature"
+                },
+                {
+                  "entity": "button.basement_copy_global_default",
+                  "name": "Copy global default"
+                }
+              ]
+            },
+            {
+              "type": "entities",
+              "title": "Foyer",
+              "show_header_toggle": false,
+              "entities": [
+                {
+                  "entity": "number.foyer_default_temperature",
+                  "name": "Default temperature"
+                },
+                {
+                  "entity": "button.foyer_copy_global_default",
+                  "name": "Copy global default"
+                }
+              ]
+            },
+            {
+              "type": "entities",
+              "title": "Breakfast/Kitchen",
+              "show_header_toggle": false,
+              "entities": [
+                {
+                  "entity": "number.breakfast_kitchen_default_temperature",
+                  "name": "Default temperature"
+                },
+                {
+                  "entity": "button.breakfast_kitchen_copy_global_default",
+                  "name": "Copy global default"
+                }
+              ]
+            },
+            {
+              "type": "entities",
+              "title": "Great Room",
+              "show_header_toggle": false,
+              "entities": [
+                {
+                  "entity": "number.great_room_default_temperature",
+                  "name": "Default temperature"
+                },
+                {
+                  "entity": "button.great_room_copy_global_default",
+                  "name": "Copy global default"
+                }
+              ]
+            },
+            {
+              "type": "entities",
+              "title": "Dining Room",
+              "show_header_toggle": false,
+              "entities": [
+                {
+                  "entity": "number.dining_room_default_temperature",
+                  "name": "Default temperature"
+                },
+                {
+                  "entity": "button.dining_room_copy_global_default",
+                  "name": "Copy global default"
+                }
+              ]
+            },
+            {
+              "type": "entities",
+              "title": "Office",
+              "show_header_toggle": false,
+              "entities": [
+                {
+                  "entity": "number.office_default_temperature",
+                  "name": "Default temperature"
+                },
+                {
+                  "entity": "button.office_copy_global_default",
+                  "name": "Copy global default"
+                }
+              ]
+            },
+            {
+              "type": "entities",
+              "title": "Guest Bedroom",
+              "show_header_toggle": false,
+              "entities": [
+                {
+                  "entity": "number.guest_bedroom_default_temperature",
+                  "name": "Default temperature"
+                },
+                {
+                  "entity": "button.guest_bedroom_copy_global_default",
+                  "name": "Copy global default"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

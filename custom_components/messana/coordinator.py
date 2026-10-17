@@ -6,9 +6,11 @@ from typing import Any, Awaitable, Callable
 import logging
 
 from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import MessanaClient, MessanaApiError
+from .temperature import macrozone_temperatures, room_temperatures
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,15 +24,30 @@ class MessanaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         client: MessanaClient,
         scan_interval_seconds: int,
         zone_count_override: int = 0,
+        *,
+        config_entry: ConfigEntry | None = None,
     ) -> None:
         super().__init__(
             hass,
             logger=_LOGGER,
             name="Messana Coordinator",
             update_interval=timedelta(seconds=scan_interval_seconds),
+            config_entry=config_entry,
         )
         self.client = client
         self.zone_count_override = max(int(zone_count_override or 0), 0)
+        self._temperature_tables_failed = False
+
+    async def _async_temperature_tables(self) -> dict:
+        try:
+            tables = await self.client.get_temperature_tables()
+        except MessanaApiError:
+            if not self._temperature_tables_failed:
+                _LOGGER.warning("Messana web-app temperature tables unavailable; default controls disabled")
+            self._temperature_tables_failed = True
+            return {}
+        self._temperature_tables_failed = False
+        return tables
 
     async def _async_fetch_hc_group(
         self,
@@ -85,11 +102,12 @@ class MessanaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _async_update_data(self) -> dict[str, Any]:
         try:
             semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
-            system_on, temp_unit, api_zone_count, hc_count = await asyncio.gather(
+            system_on, temp_unit, api_zone_count, hc_count, tables = await asyncio.gather(
                 self._async_limited_call(semaphore, self.client.get_system_status),
                 self._async_limited_call(semaphore, self.client.get_temp_unit),
                 self._async_limited_call(semaphore, self.client.get_zone_count),
                 self._async_limited_call(semaphore, self.client.get_hc_group_count),
+                self._async_limited_call(semaphore, self._async_temperature_tables),
             )
 
             zone_count = self.zone_count_override or api_zone_count
@@ -101,6 +119,12 @@ class MessanaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 ]
             )
             hc_groups = dict(hc_group_items)
+            for gid, group in hc_groups.items():
+                group["auto_mode_style"] = tables.get("GRP", {}).get(gid, {}).get("PAR_AutoModeStyle")
+            macrozones = {
+                mid: macrozone_temperatures(row, hc_groups)
+                for mid, row in tables.get("MCZ", {}).items()
+            }
 
             zone_items = await asyncio.gather(
                 *[
@@ -109,6 +133,10 @@ class MessanaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 ]
             )
             zones = dict(zone_items)
+            for zid, zone in zones.items():
+                zone["default_setpoint"] = zone["setpoint"]
+                if (row := tables.get("RMS", {}).get(zid)) is not None:
+                    zone.update(room_temperatures(row, tables.get("SCH", {}), hc_groups, macrozones))
 
             _LOGGER.debug(
                 "Messana fetched: system_status=%s temp_unit=%s api_zone_count=%s effective_zone_count=%s hc_groups=%s zones=%s",
@@ -128,6 +156,7 @@ class MessanaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     "effective_zone_count": zone_count,
                 },
                 "hc_groups": hc_groups,
+                "macrozones": macrozones,
                 "zones": zones,
             }
 

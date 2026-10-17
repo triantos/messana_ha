@@ -191,5 +191,41 @@ class MessanaClient:
 
     async def get_zone_schedule_status(self, zone_id: int) -> int:
         data = await self._request("GET", f"/api/zone/scheduleStatus/{zone_id}")
-        return self._int_or_default(data.get("status"), 0)
+        # API 0.9.1 documents "value" (also returned by controller 0.10.0).
+        # Retain compatibility with controllers returning the older shape.
+        return self._int_or_default(data.get("value", data.get("status")), 0)
 
+    async def get_temperature_tables(self) -> dict[str, dict[int, dict[str, Any]]]:
+        """Read the web app's tables for defaults, limits and scheduled targets.
+
+        These read-only endpoints supplement the public REST API, which returns
+        a room's stored default rather than the target displayed by the app.
+        Never write these internal tables through the integration.
+        """
+        fields = {
+            "GRP": {"PAR_AutoModeStyle"},
+            "RMS": {"CFG_IdxMCZ", "CFG_IdxGRP", "PAR_SetTempH", "PAR_SetTempC",
+                    "PAR_IdxSCH_H", "PAR_IdxSCH_C", "PAR_SchedOnH", "PAR_SchedOnC",
+                    "PAR_SpoSetTemp", "RTU_SpoRemain", "PAR_SpoSetTempH",
+                    "RTU_SpoRemainH", "PAR_SpoSetTempC", "RTU_SpoRemainC"},
+            "MCZ": {"CFG_Name", "CFG_IdxGRP", "PAR_SetTempH", "PAR_SetTempC",
+                    "TEC_SetTempMinH", "TEC_SetTempMaxH", "TEC_SetTempMinC", "TEC_SetTempMaxC"},
+            "SCH": {"CFG_Name", "CFG_Type", "RTU_SetPoint", "RTU_SetPointH", "RTU_SetPointC"},
+        }
+        tables = {}
+        for table, allowed in fields.items():
+            data = await self._request("GET", f"/api/table/{table}")
+            content = data.get("content")
+            if not isinstance(content, dict):
+                raise MessanaApiError(f"Unexpected {table} temperature table response")
+            tables[table] = {
+                int(key): {field: value for field, value in row.items() if field in allowed}
+                for key, row in content.items()
+                if key.isdecimal() and isinstance(row, dict)
+            }
+        return tables
+
+    async def set_macrozone_setpoint(self, macrozone_id: int, temperature: float) -> None:
+        """Apply a stored default to every room in the macrozone; keep schedules."""
+        await self._request("PUT", "/api/macrozone/setpoint",
+                            json={"id": macrozone_id, "value": float(temperature)})

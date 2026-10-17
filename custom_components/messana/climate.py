@@ -4,11 +4,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.components.climate import ClimateEntity
-from homeassistant.components.climate.const import HVACMode, ClimateEntityFeature
+from homeassistant.components.climate.const import HVACAction, HVACMode, ClimateEntityFeature
 from homeassistant.components.persistent_notification import async_create as async_create_persistent_notification
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_DETACH_ON_SETPOINT, DOMAIN, DEFAULT_DETACH_ON_SETPOINT
@@ -21,16 +22,6 @@ def _ha_temp_unit(messana_unit: str) -> UnitOfTemperature:
     if messana_unit.lower().startswith("f"):
         return UnitOfTemperature.FAHRENHEIT
     return UnitOfTemperature.CELSIUS
-
-
-def _hvac_mode_from_hc(mode: int, system_on: bool) -> HVACMode:
-    if not system_on:
-        return HVACMode.OFF
-    if mode == 0:
-        return HVACMode.HEAT
-    if mode == 1:
-        return HVACMode.COOL
-    return HVACMode.HEAT_COOL
 
 
 @dataclass(frozen=True)
@@ -63,7 +54,11 @@ async def async_setup_entry(
 class MessanaZoneClimate(MessanaEntity, ClimateEntity):
     _attr_has_entity_name = True
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
-    _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
+    _attr_supported_features = (
+        ClimateEntityFeature.TARGET_TEMPERATURE
+        | ClimateEntityFeature.TURN_ON
+        | ClimateEntityFeature.TURN_OFF
+    )
 
     def __init__(
         self,
@@ -98,19 +93,52 @@ class MessanaZoneClimate(MessanaEntity, ClimateEntity):
 
     @property
     def target_temperature(self) -> float | None:
-        return self.coordinator.data["zones"][self.zone_id].get("setpoint")
+        zone = self.coordinator.data["zones"][self.zone_id]
+        # Missing/sentinel scheduled targets must stay unknown, not become defaults.
+        return zone.get("effective_setpoint", zone.get("setpoint"))
 
     @property
-    def hvac_mode(self) -> HVACMode:
+    def min_temp(self) -> float:
+        value = self.coordinator.data.get("zones", {}).get(self.zone_id, {}).get("min_temp")
+        return value if value is not None else super().min_temp
+
+    @property
+    def max_temp(self) -> float:
+        value = self.coordinator.data.get("zones", {}).get(self.zone_id, {}).get("max_temp")
+        return value if value is not None else super().max_temp
+
+    @property
+    def _system_hvac_mode(self) -> HVACMode | None:
+        """Report the shared season without offering changeover on a room."""
+        zone = self.coordinator.data.get("zones", {}).get(self.zone_id, {})
+        hc0 = self.coordinator.data.get("hc_groups", {}).get(zone.get("hc_group_id", 0), {})
+        mode = hc0.get("mode")
+        if mode == 2:
+            mode = hc0.get("executive_season")
+        return {0: HVACMode.HEAT, 1: HVACMode.COOL}.get(mode)
+
+    @property
+    def hvac_mode(self) -> HVACMode | None:
         system_on = bool(self.coordinator.data.get("system", {}).get("status", 0))
-        # Use HC group 0 as default “global mode” if present
-        hc0 = self.coordinator.data.get("hc_groups", {}).get(0, {})
-        mode = int(hc0.get("mode", 2))
-        return _hvac_mode_from_hc(mode, system_on)
+        zone_on = bool(self.coordinator.data.get("zones", {}).get(self.zone_id, {}).get("status", 0))
+        if not system_on or not zone_on:
+            return HVACMode.OFF
+        return self._system_hvac_mode
 
     @property
     def hvac_modes(self) -> list[HVACMode]:
-        return [HVACMode.OFF, HVACMode.HEAT, HVACMode.COOL, HVACMode.HEAT_COOL]
+        mode = self._system_hvac_mode
+        return [HVACMode.OFF, mode] if mode is not None else [HVACMode.OFF]
+
+    @property
+    def hvac_action(self) -> HVACAction | None:
+        if self.hvac_mode == HVACMode.OFF:
+            return HVACAction.OFF
+        status = self.coordinator.data.get("zones", {}).get(self.zone_id, {}).get("thermal_status")
+        if status == 3:
+            # The radiant loop can only execute one season at a time.
+            return {HVACMode.HEAT: HVACAction.HEATING, HVACMode.COOL: HVACAction.COOLING}.get(self._system_hvac_mode)
+        return {0: HVACAction.IDLE, 1: HVACAction.HEATING, 2: HVACAction.COOLING}.get(status)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -130,6 +158,13 @@ class MessanaZoneClimate(MessanaEntity, ClimateEntity):
 
         return {
             "zone_id": self.zone_id,
+            "default_temperature": z.get("default_setpoint", z.get("setpoint")),
+            "default_temperature_unit": self.temperature_unit,
+            "macrozone_id": z.get("macrozone_id"),
+            "macrozone_default_temperature": z.get("macrozone_default"),
+            "matches_macrozone_default": z.get("matches_macrozone_default"),
+            "target_source": z.get("target_source", "default_only"),
+            "schedule_name": z.get("schedule_name"),
             # Master on/off for the zone
             "zone_status": z.get("status"),
             # 0 none, 1 heat, 2 cool, 3 heat+cool
@@ -180,16 +215,21 @@ class MessanaZoneClimate(MessanaEntity, ClimateEntity):
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         if hvac_mode == HVACMode.OFF:
-            await self.client.set_system_status(False)
-            await self.coordinator.async_request_refresh()
+            await self.async_turn_off()
             return
+        if hvac_mode != self._system_hvac_mode:
+            raise HomeAssistantError(
+                "Rooms follow the shared system season. Change Heating/Cooling/Auto "
+                "using the Messana H/C group mode control."
+            )
+        await self.async_turn_on()
 
-        await self.client.set_system_status(True)
-        if hvac_mode == HVACMode.HEAT:
-            await self.client.set_hc_mode(0, 0)
-        elif hvac_mode == HVACMode.COOL:
-            await self.client.set_hc_mode(0, 1)
-        elif hvac_mode == HVACMode.HEAT_COOL:
-            await self.client.set_hc_mode(0, 2)
+    async def async_turn_on(self) -> None:
+        """Enable only this room, leaving system power and changeover alone."""
+        await self.client.set_zone_status(self.zone_id, True)
+        await self.coordinator.async_request_refresh()
 
+    async def async_turn_off(self) -> None:
+        """Disable only this room."""
+        await self.client.set_zone_status(self.zone_id, False)
         await self.coordinator.async_request_refresh()
